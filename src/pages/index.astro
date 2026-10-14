@@ -1,0 +1,186 @@
+---
+import Base from '../layouts/Base.astro';
+import TvScene from '../components/TvScene.astro';
+
+const stats = [
+  { value: '12+', label: 'years of commercial game development in Unity / C#' },
+  { value: '9', label: 'years of web development in TypeScript / Angular' },
+  { value: '100M+', label: 'downloads of Raid: Shadow Legends, one of the shipped titles' },
+];
+
+const tags = ['Unity', 'C#', 'ECS', 'VFX', 'Editor tooling', 'TypeScript', 'Angular', 'Node.js', 'Three.js', 'Blender'];
+---
+
+<Base title="Dmytro Ilchenko — Games & Web">
+  <main class="wrap">
+    <section class="hero">
+      <div class="intro">
+        <div class="kicker mono"><span class="dot"></span>Games &amp; Web · Kraków, PL</div>
+        <h1>Dmytro <span class="last">Ilchenko</span></h1>
+        <p class="role">
+          Senior Software Engineer
+          <small>Unity / C# &nbsp;·&nbsp; TypeScript / Three.js</small>
+        </p>
+        <nav aria-label="Main">
+          <a class="primary" href="#">Play something →</a>
+          <a href="#">Blog</a>
+          <a href="#">Projects</a>
+          <a href="#">CV</a>
+        </nav>
+      </div>
+
+      <div class="stage">
+        <TvScene
+          videoUrl="/video/invokers-trailer.mp4"
+          title="Invokers: Titan Legacy"
+          link="https://youtu.be/Z-6WQJ7YP4g"
+        />
+      </div>
+    </section>
+
+    <section class="about" aria-labelledby="about-title">
+      <h2 id="about-title" class="label mono">About</h2>
+      <div>
+        <p class="lead">
+          I build games and things for the web. In Unity — gameplay and combat systems on ECS,
+          VFX pipelines and editor tools that let artists work without a programmer.
+          In the browser — Angular apps, Node.js backends and <em>3D with Three.js</em>.
+          This site is my playground: notes, experiments and small games you can play right here.
+        </p>
+        <dl class="stats">
+          {stats.map((s) => (
+            <div class="stat"><dt>{s.value}</dt><dd>{s.label}</dd></div>
+          ))}
+        </dl>
+        <ul class="tags">
+          {tags.map((t) => <li>{t}</li>)}
+        </ul>
+      </div>
+    </section>
+  </main>
+</Base>
+
+<style>
+  /* hero */
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.12fr);
+    align-items: start;
+    padding-top: 56px;
+  }
+
+  .kicker {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .kicker .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 10px var(--accent);
+  }
+
+  h1 {
+    margin: 22px 0 0;
+    font-size: clamp(32px, 8vw, 42px);
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+  }
+  h1 .last { color: var(--muted); }
+
+  .role { margin: 22px 0 0; font-size: 19px; line-height: 1.4; }
+  .role small {
+    display: block;
+    margin-top: 6px;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    color: var(--muted);
+  }
+
+  nav { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 32px; }
+  nav a {
+    padding: 10px 16px;
+    border: 1px solid var(--faint);
+    border-radius: 999px;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    text-decoration: none;
+    transition: border-color 0.2s, background-color 0.2s;
+  }
+  nav a:hover { border-color: var(--muted); }
+  nav a.primary { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  nav a.primary:hover { background: var(--accent); border-color: var(--accent); }
+
+  .stage {
+    position: relative;
+    height: 600px;
+    margin-right: -56px;
+    --tv-caption-right: 64px;
+    --tv-caption-bottom: 26px;
+  }
+
+  /* about */
+  .about {
+    display: grid;
+    grid-template-columns: 240px minmax(0, 1fr);
+    gap: 48px;
+    margin-top: 24px;
+    padding: 56px 0 72px;
+    border-top: 1px solid var(--line);
+  }
+  .label {
+    margin: 0;
+    padding-top: 8px;
+    font-size: 13px;
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .lead {
+    max-width: 900px;
+    margin: 0;
+    font-size: clamp(20px, 2.2vw, 27px);
+    line-height: 1.45;
+    letter-spacing: -0.01em;
+  }
+  .lead em { font-style: normal; color: var(--accent); }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 32px;
+    max-width: 900px;
+    margin: 48px 0 0;
+  }
+  .stat dt { font-size: 48px; font-weight: 500; letter-spacing: -0.03em; }
+  .stat dd { margin: 6px 0 0; font-size: 15px; line-height: 1.45; color: var(--muted); }
+
+  .tags { display: flex; flex-wrap: wrap; gap: 8px; margin: 44px 0 0; padding: 0; list-style: none; }
+  .tags li {
+    padding: 6px 12px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  @media (max-width: 1024px) {
+    .hero { grid-template-columns: minmax(0, 1fr); padding-top: 40px; }
+    .stage {
+      height: clamp(320px, 62vw, 560px);
+      margin: 8px calc(-1 * var(--gutter)) 0;
+      --tv-caption-right: var(--gutter);
+      --tv-caption-bottom: 12px;
+    }
+    .about { grid-template-columns: minmax(0, 1fr); gap: 20px; padding: 40px 0 56px; }
+  }
+</style>

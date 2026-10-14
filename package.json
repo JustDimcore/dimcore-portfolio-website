@@ -1,0 +1,25 @@
+{
+  "name": "personal-page",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "model": "node scripts/split-screen.mjs 3d/CRT_TV.glb node_modules/.cache/crt-tv/split.glb && gltf-transform optimize node_modules/.cache/crt-tv/split.glb public/models/crt-tv.glb --compress meshopt --texture-compress webp --simplify false --join false --prune-attributes false"
+  },
+  "dependencies": {
+    "@fontsource-variable/jetbrains-mono": "^5.3.0",
+    "@fontsource-variable/space-grotesk": "^5.3.0",
+    "astro": "^7.3.8",
+    "three": "^0.186.1"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@gltf-transform/cli": "^4.5.1",
+    "@types/three": "^0.186.0",
+    "typescript": "^6.0.3"
+  }
+}

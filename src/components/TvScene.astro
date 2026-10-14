@@ -1,0 +1,83 @@
+---
+interface Props {
+  modelUrl?: string;
+  /** Video for the screen; without it the TV shows snow and "NO SIGNAL". */
+  videoUrl?: string;
+  /** What's on the channel, shown in the caption while the video plays. */
+  title?: string;
+  /** Where to watch the full video. */
+  link?: string;
+}
+
+const { modelUrl = '/models/crt-tv.glb', videoUrl, title, link } = Astro.props;
+---
+
+<div class="tv-scene" data-tv-scene data-model={modelUrl} data-video={videoUrl}>
+  <canvas
+    aria-label={videoUrl ? `Old CRT TV playing ${title ?? 'a video'}; click to toggle sound` : 'Old CRT TV showing static'}
+    role="img"
+  ></canvas>
+  <div class="caption mono">
+    CH 01 · <b class="off">NO SIGNAL</b>{title && <b class="on">{title}</b>}
+    {videoUrl && (
+      <span class="on hint">
+        {' · '}<span class="muted">click the TV for sound</span><span class="unmuted">sound on</span>
+        {link && <>{' · '}<a href={link} target="_blank" rel="noopener">YouTube ↗</a></>}
+      </span>
+    )}
+  </div>
+</div>
+
+<style>
+  .tv-scene { position: relative; width: 100%; height: 100%; }
+
+  /* warm glow behind the TV */
+  .tv-scene::before {
+    content: "";
+    position: absolute;
+    left: 8%; right: 0; top: 6%; bottom: 0;
+    background: radial-gradient(closest-side at 50% 55%, rgba(232, 169, 75, 0.16), rgba(232, 169, 75, 0.05) 55%, transparent 100%);
+    filter: blur(8px);
+    pointer-events: none;
+  }
+
+  canvas {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    transition: opacity 0.8s ease;
+  }
+  .is-ready canvas { opacity: 1; }
+  [data-video] canvas { cursor: pointer; }
+
+  .caption {
+    position: absolute;
+    right: var(--tv-caption-right, 24px);
+    bottom: var(--tv-caption-bottom, 24px);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-align: right;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .caption b { font-weight: 500; color: var(--accent); }
+  .caption a { color: var(--fg); text-decoration: none; }
+  .caption a:hover { color: var(--accent); }
+
+  /* caption follows the state that crt-tv.ts writes to the container */
+  .tv-scene[data-signal="on"] .off,
+  .tv-scene:not([data-signal="on"]) .on,
+  .tv-scene[data-sound="on"] .muted,
+  .tv-scene:not([data-sound="on"]) .unmuted { display: none; }
+</style>
+
+<script>
+  // Three.js lands in its own chunk and loads only on pages that use this component.
+  for (const el of document.querySelectorAll<HTMLElement>('[data-tv-scene]')) {
+    import('../scenes/crt-tv').then(({ mount }) =>
+      mount(el, { modelUrl: el.dataset.model!, videoUrl: el.dataset.video }),
+    );
+  }
+</script>
