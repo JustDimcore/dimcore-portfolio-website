@@ -13,9 +13,9 @@ const VIEW_DIR = new THREE.Vector3(-0.6218, -0.2582, -0.7394)
   .applyAxisAngle(THREE.Object3D.DEFAULT_UP, -FRONT_TURN);
 const FOV = 9;                                   // narrow lens, close to the photo's perspective
 const FILL = 0.86;                               // share of the frame the silhouette takes at rest
-const MAX_YAW = THREE.MathUtils.degToRad(10);    // turn towards the cursor, left-right
+const MAX_YAW = THREE.MathUtils.degToRad(10);    // camera swing as the TV "looks" at the cursor, left-right
 const MAX_PITCH = THREE.MathUtils.degToRad(5);   // and up-down
-const DAMPING = 4;                               // how fast the tilt follows the cursor, 1/s
+const DAMPING = 4;                               // how fast the view follows the cursor, 1/s
 
 const SWITCH_SNOW = 400;                         // ms of snow between channels, at least
 const KNOB_DETENT = THREE.MathUtils.degToRad(30); // channel knob: 12 positions, one per click
@@ -77,16 +77,15 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
   Object.assign(key.shadow.camera, { left: -0.7, right: 0.7, top: 0.7, bottom: -0.7, near: 0.5, far: 6 });
   scene.add(key);
 
-  // The rig pivots around the TV's center and carries the shadow-catching floor with it.
-  const rig = new THREE.Group();
-  scene.add(rig);
+  // Shadow-catching floor under the TV.
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(4, 4), new THREE.ShadowMaterial({ opacity: 0.55 }));
   floor.rotation.x = -Math.PI / 2;
   floor.receiveShadow = true;
-  rig.add(floor);
+  scene.add(floor);
 
   const camera = new THREE.PerspectiveCamera(FOV, 1, 0.1, 50);
   const cameraRight = new THREE.Vector3().crossVectors(VIEW_DIR, new THREE.Vector3(0, 1, 0)).normalize();
+  const view = { target: new THREE.Vector3(), dist: 5 };   // framing at rest, set by frame()
   let silhouette: THREE.Vector3[] = [];
 
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -175,9 +174,11 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
   document.addEventListener('visibilitychange', onVisibilityChange);
 
   const pointer = new THREE.Vector2();  // where the cursor is, -1..1 around the container center
-  const tilt = new THREE.Vector2();     // damped value actually applied to the rig
+  const tilt = new THREE.Vector2();     // damped value actually applied to the camera
   const qYaw = new THREE.Quaternion();
   const qPitch = new THREE.Quaternion();
+  const orbit = new THREE.Quaternion();
+  const orbitDir = new THREE.Vector3();
 
   let ready = false;
   let dirty = true;
@@ -210,8 +211,19 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
             .addScaledVector(up, ((minY + maxY) / 2) * halfH);
       dist *= Math.max((maxX - minX) / 2, (maxY - minY) / 2) / FILL;
     }
-    camera.position.copy(target).addScaledVector(VIEW_DIR, -dist);
-    camera.lookAt(target);
+    view.target.copy(target);
+    view.dist = dist;
+    placeCamera();
+  }
+
+  // The TV "looks" at the cursor, but it's the camera that moves: it orbits the framing target
+  // the opposite way, so the TV, its light and its shadow stay exactly as they are.
+  function placeCamera() {
+    qYaw.setFromAxisAngle(THREE.Object3D.DEFAULT_UP, -tilt.x * MAX_YAW);
+    qPitch.setFromAxisAngle(cameraRight, tilt.y * MAX_PITCH);
+    orbitDir.copy(VIEW_DIR).applyQuaternion(orbit.multiplyQuaternions(qPitch, qYaw));
+    camera.position.copy(view.target).addScaledVector(orbitDir, -view.dist);
+    camera.lookAt(view.target);
   }
 
   function resize() {
@@ -232,11 +244,7 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
     if (Math.abs(pointer.x - tilt.x) + Math.abs(pointer.y - tilt.y) > 1e-4) {
       tilt.x += (pointer.x - tilt.x) * k;
       tilt.y += (pointer.y - tilt.y) * k;
-      // Yaw around the world vertical, pitch around the camera's horizontal axis:
-      // the TV front turns towards the cursor.
-      qYaw.setFromAxisAngle(THREE.Object3D.DEFAULT_UP, tilt.x * MAX_YAW);
-      qPitch.setFromAxisAngle(cameraRight, -tilt.y * MAX_PITCH);
-      rig.quaternion.multiplyQuaternions(qYaw, qPitch);
+      placeCamera();
       dirty = true;
     }
     if (knob && knobT < 1) {
@@ -322,15 +330,11 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
       console.warn('crt-tv: no channel knob pivot in the model, run `npm run model`');
     }
 
-    // Put the pivot into the TV's center so it turns in place; the floor stays under it.
-    const center = new THREE.Box3().setFromObject(model).getCenter(new THREE.Vector3());
-    rig.position.copy(center);
-    model.position.sub(center);
-    floor.position.y = -center.y - 0.001;
-    rig.add(model);
+    scene.add(model);
+    floor.position.y = new THREE.Box3().setFromObject(model).min.y - 0.001;
 
-    // Sample the silhouette once in the rest pose; framing fits it instead of the bounding box.
-    rig.updateMatrixWorld(true);
+    // Sample the silhouette once; framing fits it instead of the bounding box.
+    model.updateMatrixWorld(true);
     silhouette = [];
     model.traverse((o) => {
       const mesh = o as THREE.Mesh;
