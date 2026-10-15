@@ -5,9 +5,11 @@ interface Props {
   modelUrl?: string;
   /** Videos for the screen; a click on the TV goes to the next one. Without them: snow and "NO SIGNAL". */
   channels?: TvChannel[];
+  /** Click of the channel knob on every switch. */
+  knobSound?: string;
 }
 
-const { modelUrl = '/models/crt-tv.glb', channels = [] } = Astro.props;
+const { modelUrl = '/models/crt-tv.glb', channels = [], knobSound = '/audio/tv_knob.mp3' } = Astro.props;
 const first = channels[0];
 const total = String(channels.length).padStart(2, '0');
 ---
@@ -17,6 +19,7 @@ const total = String(channels.length).padStart(2, '0');
   data-tv-scene
   data-model={modelUrl}
   data-channels={JSON.stringify(channels)}
+  data-knob-sound={knobSound}
 >
   <canvas
     aria-label={first ? 'Old CRT TV playing videos of projects; click to switch the channel' : 'Old CRT TV showing static'}
@@ -103,6 +106,7 @@ const total = String(channels.length).padStart(2, '0');
       const tv = mount(el, {
         modelUrl: el.dataset.model!,
         videos: channels.map((c) => c.video),
+        clickSound: el.dataset.knobSound,
         onChannel(index) {
           const channel = channels[index];
           if (number) number.textContent = String(index + 1).padStart(2, '0');

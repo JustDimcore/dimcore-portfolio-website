@@ -8,7 +8,7 @@
     "build": "astro build",
     "preview": "astro preview",
     "check": "astro check",
-    "model": "node scripts/split-screen.mjs 3d/CRT_TV.glb node_modules/.cache/crt-tv/split.glb && gltf-transform optimize node_modules/.cache/crt-tv/split.glb public/models/crt-tv.glb --compress meshopt --texture-compress webp --simplify false --join false --prune-attributes false"
+    "model": "node scripts/split-screen.mjs 3d/CRT_TV_separate_knob_web_2k.glb node_modules/.cache/crt-tv/split.glb && gltf-transform optimize node_modules/.cache/crt-tv/split.glb public/models/crt-tv.glb --compress meshopt --texture-compress webp --simplify false --join false --prune-attributes false"
   },
   "dependencies": {
     "@fontsource-variable/jetbrains-mono": "^5.3.0",

@@ -3,6 +3,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { createCrtScreen, type CrtScreen } from './crt-screen';
+import { loadClickSound } from './knob-click';
 
 // Direction of the Ref_half camera in 3d/CRT_TV.blend (the 3/4 reference photo),
 // converted from Blender Z-up to glTF Y-up, then swung towards the TV's front by FRONT_TURN.
@@ -17,6 +18,14 @@ const MAX_PITCH = THREE.MathUtils.degToRad(5);   // and up-down
 const DAMPING = 4;                               // how fast the tilt follows the cursor, 1/s
 
 const SWITCH_SNOW = 400;                         // ms of snow between channels, at least
+const KNOB_DETENT = THREE.MathUtils.degToRad(30); // channel knob: 12 positions, one per click
+const KNOB_TURN = 0.18;                          // s for the knob to snap into the next position
+
+// Fast start and a small overshoot, like a knob dropping into its detent.
+function snap(x: number) {
+  const c1 = 1.2, c3 = c1 + 1;
+  return 1 + c3 * (x - 1) ** 3 + c1 * (x - 1) ** 2;
+}
 
 export interface CrtTvOptions {
   modelUrl: string;
@@ -24,6 +33,8 @@ export interface CrtTvOptions {
   videos?: string[];
   /** Called when the TV switches to another channel (also for the first one). */
   onChannel?: (index: number) => void;
+  /** Sound of the channel knob clicking into the next position. */
+  clickSound?: string;
 }
 
 export interface CrtTv {
@@ -38,7 +49,7 @@ export interface CrtTv {
  * its screen plays the channel videos; a click on the TV switches to the next one through snow.
  * Whether a picture is on goes to the container as data-signal="on|off".
  */
-export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = [], onChannel }: CrtTvOptions): CrtTv {
+export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = [], onChannel, clickSound }: CrtTvOptions): CrtTv {
   const canvas = container.querySelector('canvas');
   if (!canvas) throw new Error('crt-tv: container has no <canvas>');
   container.dataset.signal = 'off';
@@ -130,12 +141,32 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
     playVideo();
   }
 
+  // The channel knob turns clockwise by one detent on every switch, with a click.
+  const click = clickSound && videoUrls.length ? loadClickSound(clickSound) : null;
+  let knob: THREE.Object3D | null = null;
+  let knobFrom = 0;
+  let knobTo = 0;
+  let knobT = 1;
+
   function next() {
     if (!videoUrls.length || !ready) return;
     wantsPlay = true;
+    if (knob) {
+      knobFrom = knob.rotation.z;
+      knobTo -= KNOB_DETENT;
+      knobT = 0;
+    }
+    click?.play();
     tune((channel + 1) % videoUrls.length);
   }
   if (videoUrls.length) canvas.addEventListener('click', next);
+
+  // Open the audio output while the button is still held down, so the first click isn't clipped.
+  const warmUpSound = () => click?.warmUp();
+  if (click) {
+    container.addEventListener('pointerdown', warmUpSound);
+    container.addEventListener('keydown', warmUpSound);
+  }
 
   function onVisibilityChange() {
     if (document.hidden) videos[channel]?.pause();
@@ -208,6 +239,11 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
       rig.quaternion.multiplyQuaternions(qYaw, qPitch);
       dirty = true;
     }
+    if (knob && knobT < 1) {
+      knobT = Math.min(1, knobT + dt / KNOB_TURN);
+      knob.rotation.z = knobFrom + (knobTo - knobFrom) * snap(knobT);
+      dirty = true;
+    }
     // The screen is alive every frame; with reduced motion it stays still until the video plays.
     if (screen && (!reducedMotion || videos[channel]?.paused === false)) {
       screen.update(dt);
@@ -260,14 +296,31 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
     if (disposed) return;
     const model = gltf.scene;
     let glass: THREE.Mesh | undefined;
+    const anisotropy = renderer.capabilities.getMaxAnisotropy();
     model.traverse((o) => {
       const mesh = o as THREE.Mesh;
       if (!mesh.isMesh) return;
       mesh.castShadow = true;
       mesh.receiveShadow = true;
+      // sharper textures on faces seen at an angle
+      for (const value of Object.values(mesh.material)) if (value instanceof THREE.Texture) value.anisotropy = anisotropy;
       // The kinescope glass is the only part with screen UVs (see scripts/split-screen.mjs).
       if (mesh.geometry.getAttribute('uv1')) glass = mesh;
     });
+
+    // The channel knob turns around its own axis (model Z). Its node origin isn't on that axis
+    // after quantization, so it hangs on a pivot placed where the model says (scripts/split-screen.mjs).
+    const knobMesh = model.getObjectByName('Channel_Knob');
+    const knobPivot = knobMesh?.userData.pivot as [number, number, number] | undefined;
+    if (knobMesh && knobPivot) {
+      knob = new THREE.Object3D();
+      knob.position.fromArray(knobPivot);
+      model.add(knob);
+      model.updateMatrixWorld(true);
+      knob.attach(knobMesh);
+    } else {
+      console.warn('crt-tv: no channel knob pivot in the model, run `npm run model`');
+    }
 
     // Put the pivot into the TV's center so it turns in place; the floor stays under it.
     const center = new THREE.Box3().setFromObject(model).getCenter(new THREE.Vector3());
@@ -307,6 +360,8 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
     window.removeEventListener('blur', onPointerLeave);
     document.removeEventListener('visibilitychange', onVisibilityChange);
     canvas.removeEventListener('click', next);
+    container.removeEventListener('pointerdown', warmUpSound);
+    container.removeEventListener('keydown', warmUpSound);
     for (const video of videos) {
       if (!video) continue;
       video.pause();

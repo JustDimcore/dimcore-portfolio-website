@@ -1,6 +1,10 @@
-// Cuts the kinescope glass out of the TV mesh into its own primitive, so the page can
-// render video on it. The glass gets a "Screen" material and a planar TEXCOORD_1 (0..1
-// across the glass, v up) for the picture; everything else stays untouched.
+// Prepares the TV model for the page:
+// - cuts the kinescope glass out of the CRT_TV mesh into its own primitive, so the page can
+//   render video on it. The glass gets a "Screen" material and a planar TEXCOORD_1 (0..1
+//   across the glass, v up) for the picture;
+// - writes the channel knob's rotation pivot into the Channel_Knob node extras ({ pivot: [x, y, z] },
+//   model space). The optimizer quantizes meshes and moves node origins, so the page can't rely on them.
+// Everything else stays untouched.
 //
 // usage: node scripts/split-screen.mjs <in.glb> <out.glb>
 import { mkdirSync } from 'node:fs';
@@ -15,7 +19,13 @@ const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
 const doc = await io.read(input);
 const root = doc.getRoot();
 const buffer = root.listBuffers()[0];
-const mesh = root.listMeshes()[0];
+
+const knob = root.listNodes().find((n) => n.getName() === 'Channel_Knob');
+if (knob) knob.setExtras({ ...knob.getExtras(), pivot: knob.getWorldTranslation() });
+else console.warn('no Channel_Knob node: the knob will not turn');
+
+const mesh = root.listMeshes().find((m) => m.getName() === 'CRT_TV');
+if (!mesh) throw new Error('no CRT_TV mesh');
 const prim = mesh.listPrimitives()[0];
 
 const pos = prim.getAttribute('POSITION');
