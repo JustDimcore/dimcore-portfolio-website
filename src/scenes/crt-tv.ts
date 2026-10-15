@@ -16,19 +16,29 @@ const MAX_YAW = THREE.MathUtils.degToRad(10);    // turn towards the cursor, lef
 const MAX_PITCH = THREE.MathUtils.degToRad(5);   // and up-down
 const DAMPING = 4;                               // how fast the tilt follows the cursor, 1/s
 
+const SWITCH_SNOW = 400;                         // ms of snow between channels, at least
+
 export interface CrtTvOptions {
   modelUrl: string;
-  /** Video for the screen. Without it the TV shows snow. */
-  videoUrl?: string;
+  /** Videos for the channels, played muted in a loop. Without them the TV shows snow. */
+  videos?: string[];
+  /** Called when the TV switches to another channel (also for the first one). */
+  onChannel?: (index: number) => void;
+}
+
+export interface CrtTv {
+  /** Switches to the next channel. */
+  next(): void;
+  /** Stops rendering and frees GPU resources. */
+  dispose(): void;
 }
 
 /**
  * Renders the CRT TV into the container's <canvas>. The TV slightly turns to follow the cursor,
- * its screen plays the video muted; a click on the TV toggles the sound.
- * State goes to the container as data-signal="on|off" and data-sound="on|off".
- * Returns a function that stops rendering and frees GPU resources.
+ * its screen plays the channel videos; a click on the TV switches to the next one through snow.
+ * Whether a picture is on goes to the container as data-signal="on|off".
  */
-export function mount(container: HTMLElement, { modelUrl, videoUrl }: CrtTvOptions): () => void {
+export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = [], onChannel }: CrtTvOptions): CrtTv {
   const canvas = container.querySelector('canvas');
   if (!canvas) throw new Error('crt-tv: container has no <canvas>');
   container.dataset.signal = 'off';
@@ -70,42 +80,65 @@ export function mount(container: HTMLElement, { modelUrl, videoUrl }: CrtTvOptio
 
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // Muted autoplay is the only kind browsers allow; sound comes with a click.
-  // With reduced motion the video waits for that click too.
+  // Channels. Video elements are created on first use; the next channel starts buffering
+  // as soon as the current one plays. With reduced motion nothing plays until a click.
   let screen: CrtScreen | null = null;
-  let video: HTMLVideoElement | null = null;
+  const videos: HTMLVideoElement[] = [];
+  let channel = 0;
+  let tuning = 0;                      // bumps on every switch, so late events of old ones are ignored
   let wantsPlay = !reducedMotion;
-  if (videoUrl) {
-    video = document.createElement('video');
-    video.src = videoUrl;
-    video.muted = true;
-    video.loop = true;
-    video.playsInline = true;
-    video.preload = 'auto';
-    video.volume = 0.7;
-    video.addEventListener('playing', () => { screen?.setSignal(true); container.dataset.signal = 'on'; });
-    container.dataset.sound = 'off';
+
+  function videoFor(index: number) {
+    let video = videos[index];
+    if (!video) {
+      video = videos[index] = document.createElement('video');
+      video.src = videoUrls[index];
+      video.muted = true;
+      video.loop = true;
+      video.playsInline = true;
+      video.preload = 'auto';
+    }
+    return video;
   }
 
   function playVideo() {
-    if (video && wantsPlay && raf && !document.hidden) video.play().catch(() => { /* autoplay refused: stays on snow */ });
+    if (!videoUrls.length || !wantsPlay || !raf || !ready || document.hidden) return;
+    videoFor(channel).play().catch(() => { /* autoplay refused: stays on snow */ });
   }
 
-  function onClick() {
-    if (!video) return;
-    wantsPlay = true;
-    if (video.paused) {
-      video.muted = false;
-      playVideo();
-    } else {
-      video.muted = !video.muted;
-    }
-    container.dataset.sound = video.muted ? 'off' : 'on';
+  // Snow first, then the new channel's picture once its video is actually playing.
+  function tune(index: number) {
+    const token = ++tuning;
+    videos[channel]?.pause();
+    channel = index;
+    onChannel?.(index);
+    screen?.setSignal(false);
+    container.dataset.signal = 'off';
+
+    const video = videoFor(index);
+    video.currentTime = 0;
+    const earliest = performance.now() + SWITCH_SNOW;
+    video.addEventListener('playing', () => {
+      setTimeout(() => {
+        if (token !== tuning || disposed) return;
+        screen?.setVideo(video);
+        screen?.setSignal(true);
+        container.dataset.signal = 'on';
+        if (videoUrls.length > 1) videoFor((index + 1) % videoUrls.length);
+      }, Math.max(0, earliest - performance.now()));
+    }, { once: true });
+    playVideo();
   }
-  if (video) canvas.addEventListener('click', onClick);
+
+  function next() {
+    if (!videoUrls.length || !ready) return;
+    wantsPlay = true;
+    tune((channel + 1) % videoUrls.length);
+  }
+  if (videoUrls.length) canvas.addEventListener('click', next);
 
   function onVisibilityChange() {
-    if (document.hidden) video?.pause();
+    if (document.hidden) videos[channel]?.pause();
     else playVideo();
   }
   document.addEventListener('visibilitychange', onVisibilityChange);
@@ -176,7 +209,7 @@ export function mount(container: HTMLElement, { modelUrl, videoUrl }: CrtTvOptio
       dirty = true;
     }
     // The screen is alive every frame; with reduced motion it stays still until the video plays.
-    if (screen && (!reducedMotion || (video && !video.paused))) {
+    if (screen && (!reducedMotion || videos[channel]?.paused === false)) {
       screen.update(dt);
       dirty = true;
     }
@@ -195,7 +228,7 @@ export function mount(container: HTMLElement, { modelUrl, videoUrl }: CrtTvOptio
   function stop() {
     cancelAnimationFrame(raf);
     raf = 0;
-    video?.pause();
+    videos[channel]?.pause();
   }
 
   function onPointerMove(e: PointerEvent) {
@@ -254,17 +287,17 @@ export function mount(container: HTMLElement, { modelUrl, videoUrl }: CrtTvOptio
         silhouette.push(new THREE.Vector3().fromBufferAttribute(pos, i).applyMatrix4(mesh.matrixWorld));
     });
 
-    if (glass) screen = createCrtScreen(glass, video);
+    if (glass) screen = createCrtScreen(glass);
     else console.warn('crt-tv: no screen glass in the model, run `npm run model`');
 
     resize();
     ready = true;
     dirty = true;
     container.classList.add('is-ready');
-    if (raf) playVideo();
+    if (videoUrls.length) tune(0);
   }).catch((err) => console.error('crt-tv: failed to load model', err));
 
-  return () => {
+  const dispose = () => {
     disposed = true;
     stop();
     resizeObserver.disconnect();
@@ -273,8 +306,9 @@ export function mount(container: HTMLElement, { modelUrl, videoUrl }: CrtTvOptio
     document.documentElement.removeEventListener('pointerleave', onPointerLeave);
     window.removeEventListener('blur', onPointerLeave);
     document.removeEventListener('visibilitychange', onVisibilityChange);
-    canvas.removeEventListener('click', onClick);
-    if (video) {
+    canvas.removeEventListener('click', next);
+    for (const video of videos) {
+      if (!video) continue;
       video.pause();
       video.removeAttribute('src');
       video.load();
@@ -292,4 +326,6 @@ export function mount(container: HTMLElement, { modelUrl, videoUrl }: CrtTvOptio
     envMap.dispose();
     renderer.dispose();
   };
+
+  return { next, dispose };
 }

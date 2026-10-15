@@ -78,6 +78,8 @@ export interface CrtScreen {
   update(dt: number): void;
   /** true: switch to the video with a burst of noise; false: back to snow. */
   setSignal(on: boolean): void;
+  /** Puts this video on the picture (shown once the signal is on). */
+  setVideo(video: HTMLVideoElement): void;
   dispose(): void;
 }
 
@@ -85,28 +87,22 @@ export interface CrtScreen {
  * Turns the glass mesh into a CRT screen. The mesh needs planar screen UVs in `uv1`
  * (TEXCOORD_1, written by scripts/split-screen.mjs).
  */
-export function createCrtScreen(mesh: THREE.Mesh, video: HTMLVideoElement | null): CrtScreen {
+export function createCrtScreen(mesh: THREE.Mesh): CrtScreen {
   const geometry = mesh.geometry;
   geometry.setAttribute('screenUv', geometry.getAttribute('uv1'));
   geometry.deleteAttribute('uv1');
 
   const size = new THREE.Box3().setFromObject(mesh).getSize(new THREE.Vector3());
-  const texture = video ? new THREE.VideoTexture(video) : null;
-  if (texture) texture.colorSpace = THREE.SRGBColorSpace;
+  const textures = new Map<HTMLVideoElement, THREE.VideoTexture>();
 
   const uniforms = {
-    uVideo: { value: (texture ?? BLACK) as THREE.Texture },
+    uVideo: { value: BLACK as THREE.Texture },
     uTime: { value: 0 },
     uSignal: { value: 0 },
     uGlitch: { value: 0 },
-    uVideoAspect: { value: 16 / 9 },
+    uVideoAspect: { value: 4 / 3 },
     uScreenAspect: { value: size.x / size.y },
   };
-  if (video) {
-    const setAspect = () => { if (video.videoHeight) uniforms.uVideoAspect.value = video.videoWidth / video.videoHeight; };
-    video.addEventListener('loadedmetadata', setAspect);
-    setAspect();
-  }
 
   const original = mesh.material as THREE.MeshStandardMaterial;
   const material = original.clone();
@@ -140,8 +136,18 @@ export function createCrtScreen(mesh: THREE.Mesh, video: HTMLVideoElement | null
       signalTarget = target;
       uniforms.uGlitch.value = 1;
     },
+    setVideo(video) {
+      let texture = textures.get(video);
+      if (!texture) {
+        texture = new THREE.VideoTexture(video);
+        texture.colorSpace = THREE.SRGBColorSpace;
+        textures.set(video, texture);
+      }
+      uniforms.uVideo.value = texture;
+      if (video.videoHeight) uniforms.uVideoAspect.value = video.videoWidth / video.videoHeight;
+    },
     dispose() {
-      texture?.dispose();
+      for (const texture of textures.values()) texture.dispose();
       material.dispose();
     },
   };

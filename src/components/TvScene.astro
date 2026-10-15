@@ -1,29 +1,38 @@
 ---
+import type { TvChannel } from '../data/channels';
+
 interface Props {
   modelUrl?: string;
-  /** Video for the screen; without it the TV shows snow and "NO SIGNAL". */
-  videoUrl?: string;
-  /** What's on the channel, shown in the caption while the video plays. */
-  title?: string;
-  /** Where to watch the full video. */
-  link?: string;
+  /** Videos for the screen; a click on the TV goes to the next one. Without them: snow and "NO SIGNAL". */
+  channels?: TvChannel[];
 }
 
-const { modelUrl = '/models/crt-tv.glb', videoUrl, title, link } = Astro.props;
+const { modelUrl = '/models/crt-tv.glb', channels = [] } = Astro.props;
+const first = channels[0];
+const total = String(channels.length).padStart(2, '0');
 ---
 
-<div class="tv-scene" data-tv-scene data-model={modelUrl} data-video={videoUrl}>
+<div
+  class:list={['tv-scene', { switchable: channels.length > 0 }]}
+  data-tv-scene
+  data-model={modelUrl}
+  data-channels={JSON.stringify(channels)}
+>
   <canvas
-    aria-label={videoUrl ? `Old CRT TV playing ${title ?? 'a video'}; click to toggle sound` : 'Old CRT TV showing static'}
+    aria-label={first ? 'Old CRT TV playing videos of projects; click to switch the channel' : 'Old CRT TV showing static'}
     role="img"
   ></canvas>
-  <div class="caption mono">
-    CH 01 · <b class="off">NO SIGNAL</b>{title && <b class="on">{title}</b>}
-    {videoUrl && (
-      <span class="on hint">
-        {' · '}<span class="muted">click the TV for sound</span><span class="unmuted">sound on</span>
-        {link && <>{' · '}<a href={link} target="_blank" rel="noopener">YouTube ↗</a></>}
-      </span>
+  <div class="caption mono" aria-live="polite">
+    {first ? (
+      <>
+        CH <span data-channel-number>01</span>/{total}{' · '}<b data-channel-title>{first.title}</b>
+        {channels.length > 1 && <>{' · '}<button type="button" data-next>next ▸</button></>}
+        <span data-channel-link-wrap hidden={!first.link}>
+          {' · '}<a data-channel-link href={first.link} target="_blank" rel="noopener">YouTube ↗</a>
+        </span>
+      </>
+    ) : (
+      <>CH 01 · <b>NO SIGNAL</b></>
     )}
   </div>
 </div>
@@ -50,7 +59,7 @@ const { modelUrl = '/models/crt-tv.glb', videoUrl, title, link } = Astro.props;
     transition: opacity 0.8s ease;
   }
   .is-ready canvas { opacity: 1; }
-  [data-video] canvas { cursor: pointer; }
+  .switchable canvas { cursor: pointer; }
 
   .caption {
     position: absolute;
@@ -63,21 +72,48 @@ const { modelUrl = '/models/crt-tv.glb', videoUrl, title, link } = Astro.props;
     color: var(--muted);
   }
   .caption b { font-weight: 500; color: var(--accent); }
-  .caption a { color: var(--fg); text-decoration: none; }
-  .caption a:hover { color: var(--accent); }
-
-  /* caption follows the state that crt-tv.ts writes to the container */
-  .tv-scene[data-signal="on"] .off,
-  .tv-scene:not([data-signal="on"]) .on,
-  .tv-scene[data-sound="on"] .muted,
-  .tv-scene:not([data-sound="on"]) .unmuted { display: none; }
+  .caption a,
+  .caption button {
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    color: var(--fg);
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .caption a:hover,
+  .caption button:hover { color: var(--accent); }
 </style>
 
 <script>
+  import type { TvChannel } from '../data/channels';
+
   // Three.js lands in its own chunk and loads only on pages that use this component.
   for (const el of document.querySelectorAll<HTMLElement>('[data-tv-scene]')) {
-    import('../scenes/crt-tv').then(({ mount }) =>
-      mount(el, { modelUrl: el.dataset.model!, videoUrl: el.dataset.video }),
-    );
+    const channels: TvChannel[] = JSON.parse(el.dataset.channels ?? '[]');
+    const number = el.querySelector('[data-channel-number]');
+    const title = el.querySelector('[data-channel-title]');
+    const linkWrap = el.querySelector<HTMLElement>('[data-channel-link-wrap]');
+    const link = el.querySelector<HTMLAnchorElement>('[data-channel-link]');
+
+    import('../scenes/crt-tv').then(({ mount }) => {
+      const tv = mount(el, {
+        modelUrl: el.dataset.model!,
+        videos: channels.map((c) => c.video),
+        onChannel(index) {
+          const channel = channels[index];
+          if (number) number.textContent = String(index + 1).padStart(2, '0');
+          if (title) title.textContent = channel.title;
+          if (linkWrap && link) {
+            linkWrap.hidden = !channel.link;
+            if (channel.link) link.href = channel.link;
+          }
+        },
+      });
+      el.querySelector('[data-next]')?.addEventListener('click', () => tv.next());
+    });
   }
 </script>

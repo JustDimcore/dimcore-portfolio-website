@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import TvScene from '../components/TvScene.astro';
+import { channels } from '../data/channels';
 
 const stats = [
   { value: '12+', label: 'years of commercial game development in Unity / C#' },
@@ -30,11 +31,7 @@ const tags = ['Unity', 'C#', 'ECS', 'VFX', 'Editor tooling', 'TypeScript', 'Angu
       </div>
 
       <div class="stage">
-        <TvScene
-          videoUrl="/video/invokers-trailer.mp4"
-          title="Invokers: Titan Legacy"
-          link="https://youtu.be/Z-6WQJ7YP4g"
-        />
+        <TvScene channels={channels} />
       </div>
     </section>
 
