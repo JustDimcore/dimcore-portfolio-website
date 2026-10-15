@@ -47,7 +47,8 @@ export interface CrtTv {
 /**
  * Renders the CRT TV into the container's <canvas>. The TV slightly turns to follow the cursor,
  * its screen plays the channel videos; a click on the TV switches to the next one through snow.
- * Whether a picture is on goes to the container as data-signal="on|off".
+ * The picture's state goes to the container as data-signal: "on", "off" (snow while the video
+ * loads or waits for a click) or "lost" (the channel's video failed to load).
  */
 export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = [], onChannel, clickSound }: CrtTvOptions): CrtTv {
   const canvas = container.querySelector('canvas');
@@ -97,23 +98,39 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
   let channel = 0;
   let tuning = 0;                      // bumps on every switch, so late events of old ones are ignored
   let wantsPlay = !reducedMotion;
+  // The current channel waits for a click to start: autoplay was refused or motion is reduced.
+  // That click turns the channel on instead of switching to the next one.
+  let waitingForClick = false;
 
   function videoFor(index: number) {
     let video = videos[index];
     if (!video) {
-      video = videos[index] = document.createElement('video');
-      video.src = videoUrls[index];
-      video.muted = true;
-      video.loop = true;
-      video.playsInline = true;
-      video.preload = 'auto';
+      const created = document.createElement('video');
+      created.src = videoUrls[index];
+      created.muted = true;
+      created.loop = true;
+      created.playsInline = true;
+      created.preload = 'auto';
+      // A video that can't load leaves its channel on snow with "NO SIGNAL" in the caption.
+      created.addEventListener('error', () => {
+        if (created === videos[channel]) container.dataset.signal = 'lost';
+      });
+      video = videos[index] = created;
     }
     return video;
   }
 
   function playVideo() {
-    if (!videoUrls.length || !wantsPlay || !raf || !ready || document.hidden) return;
-    videoFor(channel).play().catch(() => { /* autoplay refused: stays on snow */ });
+    if (!videoUrls.length || !raf || !ready || document.hidden) return;
+    if (!wantsPlay) {
+      waitingForClick = true;
+      return;
+    }
+    const video = videoFor(channel);
+    video.play().catch((err: DOMException) => {
+      // autoplay refused (power saving, browser settings): stays on snow until a click
+      if (err.name === 'NotAllowedError' && video === videos[channel]) waitingForClick = true;
+    });
   }
 
   // Snow first, then the new channel's picture once its video is actually playing.
@@ -121,11 +138,13 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
     const token = ++tuning;
     videos[channel]?.pause();
     channel = index;
+    waitingForClick = false;
     onChannel?.(index);
     screen?.setSignal(false);
     container.dataset.signal = 'off';
 
     const video = videoFor(index);
+    if (video.error) video.load();   // it failed to load before: try again
     video.currentTime = 0;
     const earliest = performance.now() + SWITCH_SNOW;
     video.addEventListener('playing', () => {
@@ -150,6 +169,11 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
   function next() {
     if (!videoUrls.length || !ready) return;
     wantsPlay = true;
+    if (waitingForClick) {
+      waitingForClick = false;
+      playVideo();
+      return;
+    }
     if (knob) {
       knobFrom = knob.rotation.z;
       knobTo -= KNOB_DETENT;

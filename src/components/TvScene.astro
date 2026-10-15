@@ -28,7 +28,7 @@ const total = String(channels.length).padStart(2, '0');
   <div class="caption mono" aria-live="polite">
     {first ? (
       <>
-        CH <span data-channel-number>01</span>/{total}{' · '}<b data-channel-title>{first.title}</b>
+        CH <span data-channel-number>01</span>/{total}{' · '}<b data-channel-title>{first.title}</b><b class="lost">NO SIGNAL</b>
         {channels.length > 1 && <>{' · '}<button type="button" data-next>next ▸</button></>}
         <span data-channel-link-wrap hidden={!first.link}>
           {' · '}<a data-channel-link href={first.link} target="_blank" rel="noopener">YouTube ↗</a>
@@ -75,6 +75,11 @@ const total = String(channels.length).padStart(2, '0');
     color: var(--muted);
   }
   .caption b { font-weight: 500; color: var(--accent); }
+
+  /* the channel's video failed to load (crt-tv.ts sets data-signal="lost") */
+  .caption .lost,
+  .tv-scene[data-signal="lost"] [data-channel-title] { display: none; }
+  .tv-scene[data-signal="lost"] .caption .lost { display: inline; }
   .caption a,
   .caption button {
     padding: 0;
