@@ -4,6 +4,7 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { createCrtScreen, type CrtScreen } from './crt-screen';
 import { loadClickSound } from './knob-click';
+import { createChannelVideo, type ChannelVideo } from './channel-video';
 
 // Direction of the Ref_half camera in 3d/CRT_TV.blend (the 3/4 reference photo),
 // converted from Blender Z-up to glTF Y-up, then swung towards the TV's front by FRONT_TURN.
@@ -91,10 +92,11 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
 
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // Channels. Video elements are created on first use; the next channel starts buffering
-  // as soon as the current one plays. With reduced motion nothing plays until a click.
+  // Channels. Videos are created on first use and load in chunks as they play (channel-video.ts);
+  // the next channel loads its first chunks as soon as the current one plays.
+  // With reduced motion nothing plays until a click.
   let screen: CrtScreen | null = null;
-  const videos: HTMLVideoElement[] = [];
+  const videos: ChannelVideo[] = [];
   let channel = 0;
   let tuning = 0;                      // bumps on every switch, so late events of old ones are ignored
   let wantsPlay = !reducedMotion;
@@ -103,21 +105,16 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
   let waitingForClick = false;
 
   function videoFor(index: number) {
-    let video = videos[index];
-    if (!video) {
-      const created = document.createElement('video');
-      created.src = videoUrls[index];
-      created.muted = true;
-      created.loop = true;
-      created.playsInline = true;
-      created.preload = 'auto';
+    let ch = videos[index];
+    if (!ch) {
+      const created = createChannelVideo(videoUrls[index]);
       // A video that can't load leaves its channel on snow with "NO SIGNAL" in the caption.
-      created.addEventListener('error', () => {
+      created.video.addEventListener('error', () => {
         if (created === videos[channel]) container.dataset.signal = 'lost';
       });
-      video = videos[index] = created;
+      ch = videos[index] = created;
     }
-    return video;
+    return ch;
   }
 
   function playVideo() {
@@ -126,25 +123,26 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
       waitingForClick = true;
       return;
     }
-    const video = videoFor(channel);
-    video.play().catch((err: DOMException) => {
+    const ch = videoFor(channel);
+    ch.video.play().catch((err: DOMException) => {
       // autoplay refused (power saving, browser settings): stays on snow until a click
-      if (err.name === 'NotAllowedError' && video === videos[channel]) waitingForClick = true;
+      if (err.name === 'NotAllowedError' && ch === videos[channel]) waitingForClick = true;
     });
   }
 
   // Snow first, then the new channel's picture once its video is actually playing.
   function tune(index: number) {
     const token = ++tuning;
-    videos[channel]?.pause();
+    videos[channel]?.video.pause();
     channel = index;
     waitingForClick = false;
     onChannel?.(index);
     screen?.setSignal(false);
     container.dataset.signal = 'off';
 
-    const video = videoFor(index);
-    if (video.error) video.load();   // it failed to load before: try again
+    const ch = videoFor(index);
+    if (ch.video.error) ch.reload();   // it failed to load before: try again
+    const video = ch.video;
     video.currentTime = 0;
     const earliest = performance.now() + SWITCH_SNOW;
     video.addEventListener('playing', () => {
@@ -192,7 +190,7 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
   }
 
   function onVisibilityChange() {
-    if (document.hidden) videos[channel]?.pause();
+    if (document.hidden) videos[channel]?.video.pause();
     else playVideo();
   }
   document.addEventListener('visibilitychange', onVisibilityChange);
@@ -277,7 +275,7 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
       dirty = true;
     }
     // The screen is alive every frame; with reduced motion it stays still until the video plays.
-    if (screen && (!reducedMotion || videos[channel]?.paused === false)) {
+    if (screen && (!reducedMotion || videos[channel]?.video.paused === false)) {
       screen.update(dt);
       dirty = true;
     }
@@ -296,7 +294,7 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
   function stop() {
     cancelAnimationFrame(raf);
     raf = 0;
-    videos[channel]?.pause();
+    videos[channel]?.video.pause();
   }
 
   function onPointerMove(e: PointerEvent) {
@@ -390,12 +388,7 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
     canvas.removeEventListener('click', next);
     container.removeEventListener('pointerdown', warmUpSound);
     container.removeEventListener('keydown', warmUpSound);
-    for (const video of videos) {
-      if (!video) continue;
-      video.pause();
-      video.removeAttribute('src');
-      video.load();
-    }
+    for (const ch of videos) ch?.dispose();
     screen?.dispose();
     scene.traverse((o) => {
       const mesh = o as THREE.Mesh;
