@@ -2,14 +2,22 @@
 import type { TvChannel } from '../data/channels';
 
 interface Props {
+  /** The TV with 2K textures, for wide screens. */
   modelUrl?: string;
+  /** The same TV with lighter textures, for screens up to 768 px wide. */
+  mobileModelUrl?: string;
   /** Videos for the screen; a click on the TV goes to the next one. Without them: snow and "NO SIGNAL". */
   channels?: TvChannel[];
   /** Click of the channel knob on every switch. */
   knobSound?: string;
 }
 
-const { modelUrl = '/models/crt-tv.glb', channels = [], knobSound = '/audio/tv_knob.mp3' } = Astro.props;
+const {
+  modelUrl = '/models/crt-tv-2k.glb',
+  mobileModelUrl = '/models/crt-tv-1k.glb',
+  channels = [],
+  knobSound = '/audio/tv_knob.mp3',
+} = Astro.props;
 const first = channels[0];
 const total = String(channels.length).padStart(2, '0');
 ---
@@ -18,6 +26,7 @@ const total = String(channels.length).padStart(2, '0');
   class:list={['tv-scene', { switchable: channels.length > 0 }]}
   data-tv-scene
   data-model={modelUrl}
+  data-mobile-model={mobileModelUrl}
   data-channels={JSON.stringify(channels)}
   data-knob-sound={knobSound}
 >
@@ -107,9 +116,12 @@ const total = String(channels.length).padStart(2, '0');
     const linkWrap = el.querySelector<HTMLElement>('[data-channel-link-wrap]');
     const link = el.querySelector<HTMLAnchorElement>('[data-channel-link]');
 
+    // phones get the model with lighter textures
+    const small = window.matchMedia('(max-width: 768px)').matches;
+
     import('../scenes/crt-tv').then(({ mount }) => {
       const tv = mount(el, {
-        modelUrl: el.dataset.model!,
+        modelUrl: (small && el.dataset.mobileModel) || el.dataset.model!,
         videos: channels.map((c) => c.video),
         clickSound: el.dataset.knobSound,
         onChannel(index) {

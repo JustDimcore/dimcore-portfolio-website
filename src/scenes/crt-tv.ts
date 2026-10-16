@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { createCrtScreen, type CrtScreen } from './crt-screen';
 import { loadClickSound } from './knob-click';
 import { createChannelVideo, type ChannelVideo } from './channel-video';
@@ -321,7 +320,7 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
   const visibility = new IntersectionObserver(([entry]) => (entry.isIntersecting ? start() : stop()));
   visibility.observe(container);
 
-  const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+  const loader = new GLTFLoader();
   loader.loadAsync(modelUrl).then((gltf) => {
     if (disposed) return;
     const model = gltf.scene;

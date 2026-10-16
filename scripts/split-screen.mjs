@@ -3,8 +3,8 @@
 //   render video on it. The glass gets a "Screen" material and a planar TEXCOORD_1 (0..1
 //   across the glass, v up) for the picture;
 // - writes the channel knob's rotation pivot into the Channel_Knob node extras ({ pivot: [x, y, z] },
-//   model space). The optimizer quantizes meshes and moves node origins, so the page can't rely on them.
-// Everything else stays untouched.
+//   model space), so the page doesn't depend on node origins (mesh optimizers like to move them).
+// Everything else, textures included, is written back as it was.
 //
 // usage: node scripts/split-screen.mjs <in.glb> <out.glb>
 import { mkdirSync } from 'node:fs';
