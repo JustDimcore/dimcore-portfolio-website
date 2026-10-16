@@ -9,8 +9,8 @@ export const links = {
 };
 
 export const stats = [
-  { value: '14+', label: 'years in software engineering' },
-  { value: '12+', label: 'years of commercial game development in Unity / C#' },
+  { value: '15', label: 'years in software engineering' },   // since mid-2011
+  { value: '12', label: 'years of commercial game development in Unity / C#' },
   { value: '9', label: 'years of web development in TypeScript / Angular' },
 ];
 
@@ -41,36 +41,115 @@ export const skills: { title: string; items: string[] }[] = [
   },
 ];
 
-export const experience = [
+export interface Job {
+  role: string;
+  company: string;
+  place?: string;
+  dates: string;
+  /** The project or titles the job was about. */
+  project?: string;
+  points: string[];
+}
+
+// Wording as in the CV; two tracks, as the CV splits them.
+export const experience: { track: string; jobs: Job[] }[] = [
   {
-    years: '2022 – 2026',
-    role: 'Unity Developer',
-    company: 'HitZone',
-    summary: 'Invokers: Titan Legacy — combat on ECS, a VFX pipeline for the art team, node-based scripting for ~1,000 character abilities, editor tools.',
+    track: 'Games · Unity / C#',
+    jobs: [
+      {
+        role: 'Unity Developer',
+        company: 'HitZone',
+        place: 'Kraków, Poland',
+        dates: 'Oct 2022 – Sep 2026',
+        project: 'Invokers: Titan Legacy — multi-platform online Action RPG, launched in July 2026 on iOS, Android and Desktop',
+        points: [
+          'Developed core gameplay and combat mechanics using the ECS architecture.',
+          'Designed and implemented a combat visual effects (VFX) management system.',
+          'Built a VFX assembly and configuration pipeline for the art team, cutting effect creation time from several days to several hours and reducing developer involvement.',
+          'Implemented a node-based visual scripting system for configuring and tuning character abilities, used to set up ~300 characters and ~1,000 abilities.',
+          'Built custom Unity Editor tools used by the art and design teams to configure game entities (characters, VFX, SFX, animations) using IMGUI and Odin Inspector.',
+          'Developed the meta-game layer using a state-management approach.',
+          'Built UI components for the meta-game and battle HUD (uGUI).',
+          'Implemented camera control logic for battles and the campaign map.',
+          'Maintained the FMOD sound system integration and implemented keyboard/gamepad input bindings.',
+        ],
+      },
+      {
+        role: 'Unity Developer',
+        company: 'Room 8 Studio',
+        place: 'Kharkiv, Ukraine',
+        dates: 'Feb 2021 – Oct 2022',
+        points: [
+          'NDA — restored an older project and delivered its Xbox port within ~6 months (the title also shipped on other console platforms and desktop).',
+          'NDA — mobile English-learning game/app (iOS, Android); led a team of 4 developers.',
+          'Contributed to a cross-platform online game project delivered across mobile and desktop platforms.',
+          'Built a custom MVVM/data-binding framework.',
+        ],
+      },
+      {
+        role: 'Unity Developer / Frontend Developer',
+        company: 'Plarium',
+        place: 'Kharkiv region, Ukraine',
+        dates: 'Apr 2014 – Jan 2021',
+        project: 'Android/iOS: Raid: Shadow Legends (100M+ downloads), Stormfall: Rise of Balur (20M+ downloads), Soldiers Inc: Mobile Warfare (10M+ downloads), Nords: Heroes of the North',
+        points: [
+          'Developed mobile clients for hardcore MMO RTS and Turn-Based RPG games using an in-house MVVM architecture and various UI approaches (NGUI, Unity UI).',
+          'Built internal development tools for the team using WPF, Angular, AngularJS, TypeScript and Node.js.',
+          'Stack: Unity, C#/.NET; additionally WPF, JavaScript, TypeScript, Angular, AngularJS, Node.js.',
+        ],
+      },
+    ],
   },
   {
-    years: '2021 – 2022',
-    role: 'Unity Developer',
-    company: 'Room 8 Studio',
-    summary: 'An Xbox port of an existing title in about six months; led a team of 4 on a mobile learning game.',
-  },
-  {
-    years: '2018 – 2026',
-    role: 'Frontend Developer (Angular)',
-    company: 'Freelance',
-    summary: 'A project management system for a U.S. defense-sector company, a supply chain tool, a volunteer service for people affected by the war.',
-  },
-  {
-    years: '2014 – 2021',
-    role: 'Unity / Frontend Developer',
-    company: 'Plarium',
-    summary: 'Raid: Shadow Legends, Stormfall: Rise of Balur, Soldiers Inc: Mobile Warfare, Nords: Heroes of the North; internal tools in Angular and Node.js.',
-  },
-  {
-    years: '2011',
-    role: 'Full-stack JavaScript / Python Developer',
-    company: 'Edom',
-    summary: 'Worked as a front-end (HTML/CSS/JS) and back-end (Python) developer. Developed the web client and the server for a security systems map.',
+    track: 'Web · TypeScript / JavaScript',
+    jobs: [
+      {
+        role: 'Frontend Developer (Angular)',
+        company: 'via Upwork',
+        place: 'Remote',
+        dates: 'Oct 2021 – Jan 2026',
+        points: [
+          'Built a supply chain management tool for a goods manufacturer to coordinate products with contractors.',
+          'Optimized the application using modern framework approaches.',
+          'Migrated the entire frontend codebase to a new Angular version.',
+          'Built a project harness for AI agents.',
+        ],
+      },
+      {
+        role: 'Frontend Angular Developer',
+        company: 'Eagle6',
+        place: 'Remote (via Upwork)',
+        dates: 'Jan 2019 – Oct 2021',
+        points: [
+          'Developed a project management system for a U.S. defense-sector company, combining issue tracking, a wiki/knowledge base, internal messaging and a company structure tree (similar to Jira + Confluence + a messenger).',
+        ],
+      },
+      {
+        role: 'Frontend Developer (Angular)',
+        company: 'Juravli',
+        place: 'Remote',
+        dates: 'May 2022 – Aug 2022',
+        points: ['Volunteer project — built a service for finding volunteers to help people affected by the war.'],
+      },
+      {
+        role: 'Fullstack Developer (Angular / Node.js)',
+        company: 'Plarium',
+        place: 'Kharkiv region, Ukraine',
+        dates: 'Jun 2018 – Nov 2018',
+        points: [
+          'Architected and built an image cataloging solution enabling seamless asset sharing between designers and programmers (Angular, Node.js, Google Auth).',
+        ],
+      },
+      {
+        role: 'Full-stack JavaScript / Python Developer',
+        company: 'Edom',
+        dates: '2011',
+        points: [
+          'Worked as a front-end (HTML/CSS/JS) and back-end (Python) developer.',
+          'Developed the web client and the server for a security systems map.',
+        ],
+      },
+    ],
   },
 ];
 

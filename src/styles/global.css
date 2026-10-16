@@ -17,6 +17,11 @@
 
 html, body { margin: 0; background: var(--bg); color: var(--fg); }
 
+/* in-page links (About me) glide instead of jumping */
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
+
 body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
