@@ -2,30 +2,22 @@
 import Base from '../layouts/Base.astro';
 import TvScene from '../components/TvScene.astro';
 import { channels } from '../data/channels';
-
-const stats = [
-  { value: '12+', label: 'years of commercial game development in Unity / C#' },
-  { value: '9', label: 'years of web development in TypeScript / Angular' },
-  { value: '100M+', label: 'downloads of Raid: Shadow Legends, one of the shipped titles' },
-];
-
-const tags = ['Unity', 'C#', 'ECS', 'VFX', 'Editor tooling', 'TypeScript', 'Angular', 'Node.js', 'Three.js', 'Blender'];
+import { links, stats, skills, experience, education, languages, contacts } from '../data/profile';
 ---
 
-<Base title="Dmytro Ilchenko — Games & Web">
+<Base title="Dmytro Ilchenko — Software Engineer">
   <main class="wrap">
     <section class="hero">
       <div class="intro">
-        <div class="kicker mono"><span class="dot"></span>Games &amp; Web · Kraków, PL</div>
         <h1>Dmytro <span class="last">Ilchenko</span></h1>
         <p class="role">
-          Senior Software Engineer
-          <small>Unity / C# &nbsp;·&nbsp; TypeScript / Three.js</small>
+          Software Engineer
+          <small>Gamedev &amp; Web</small>
+          <small>Unity / C# &nbsp;·&nbsp; TypeScript / JavaScript</small>
         </p>
         <nav aria-label="Main">
           <a class="primary" href="#">Play something →</a>
-          <a href="#">Blog</a>
-          <a href="#">Projects</a>
+          <a href={links.projects}>Projects</a>
           <a href="#">CV</a>
         </nav>
       </div>
@@ -35,24 +27,83 @@ const tags = ['Unity', 'C#', 'ECS', 'VFX', 'Editor tooling', 'TypeScript', 'Angu
       </div>
     </section>
 
-    <section class="about" aria-labelledby="about-title">
+    <section class="section" aria-labelledby="about-title">
       <h2 id="about-title" class="label mono">About</h2>
       <div>
         <p class="lead">
-          I build games and things for the web. In Unity — gameplay and combat systems on ECS,
-          VFX pipelines and editor tools that let artists work without a programmer.
-          In the browser — Angular apps, Node.js backends and <em>3D with Three.js</em>.
-          This site is my playground: notes, experiments and small games you can play right here.
+          Hi, I'm Dmytro, a software engineer. I mostly work on game development and the web.
+          Since 2014 I've worked on 7 game projects and more than 10 websites, and taken part in 4 game jams.
+          Some of the games I've worked on are in <a href={links.projects}>Projects</a>.
         </p>
         <dl class="stats">
           {stats.map((s) => (
             <div class="stat"><dt>{s.value}</dt><dd>{s.label}</dd></div>
           ))}
         </dl>
-        <ul class="tags">
-          {tags.map((t) => <li>{t}</li>)}
-        </ul>
       </div>
+    </section>
+
+    <section class="section" aria-labelledby="skills-title">
+      <h2 id="skills-title" class="label mono">Skills</h2>
+      <div class="skills">
+        {skills.map((group) => (
+          <div>
+            <h3 class="group mono">{group.title}</h3>
+            <ul class="tags">
+              {group.items.map((item) => <li>{item}</li>)}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="experience-title">
+      <h2 id="experience-title" class="label mono">Experience</h2>
+      <ol class="timeline">
+        {experience.map((job) => (
+          <li>
+            <span class="years mono">{job.years}</span>
+            <div>
+              <h3>{job.role} <span class="company">· {job.company}</span></h3>
+              <p>{job.summary}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </section>
+
+    <section class="section" aria-labelledby="background-title">
+      <h2 id="background-title" class="label mono">Education &amp; languages</h2>
+      <div class="background">
+        <div>
+          <h3 class="group mono">Education</h3>
+          {education.map((e) => (
+            <p class="entry"><b>{e.school}</b><span>{e.degree} · {e.years}</span></p>
+          ))}
+        </div>
+        <div>
+          <h3 class="group mono">Languages</h3>
+          <dl class="languages">
+            {languages.map((l) => (
+              <div><dt>{l.name}</dt><dd>{l.level}</dd></div>
+            ))}
+          </dl>
+        </div>
+      </div>
+    </section>
+
+    <section class="section last-section" aria-labelledby="contact-title">
+      <h2 id="contact-title" class="label mono">Contact</h2>
+      <dl class="contacts">
+        {contacts.map((c) => (
+          <div>
+            <dt class="mono">{c.label}</dt>
+            <dd>
+              <a href={c.href} {...(c.href.startsWith('http') ? { target: '_blank', rel: 'noopener' } : {})}>{c.text}</a>
+            </dd>
+          </div>
+        ))}
+      </dl>
     </section>
   </main>
 </Base>
@@ -66,25 +117,8 @@ const tags = ['Unity', 'C#', 'ECS', 'VFX', 'Editor tooling', 'TypeScript', 'Angu
     padding-top: 56px;
   }
 
-  .kicker {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 13px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--muted);
-  }
-  .kicker .dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: var(--accent);
-    box-shadow: 0 0 10px var(--accent);
-  }
-
   h1 {
-    margin: 22px 0 0;
+    margin: 0;
     font-size: clamp(32px, 8vw, 42px);
     font-weight: 600;
     line-height: 1.1;
@@ -123,15 +157,16 @@ const tags = ['Unity', 'C#', 'ECS', 'VFX', 'Editor tooling', 'TypeScript', 'Angu
     --tv-caption-bottom: 26px;
   }
 
-  /* about */
-  .about {
+  /* sections below the hero: a label on the left, the content on the right */
+  .section {
     display: grid;
     grid-template-columns: 240px minmax(0, 1fr);
     gap: 48px;
-    margin-top: 24px;
-    padding: 56px 0 72px;
+    padding: 56px 0;
     border-top: 1px solid var(--line);
   }
+  .hero + .section { margin-top: 24px; }
+  .last-section { padding-bottom: 96px; }
   .label {
     margin: 0;
     padding-top: 8px;
@@ -141,6 +176,16 @@ const tags = ['Unity', 'C#', 'ECS', 'VFX', 'Editor tooling', 'TypeScript', 'Angu
     text-transform: uppercase;
     color: var(--muted);
   }
+  .group {
+    margin: 0 0 12px;
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* about */
   .lead {
     max-width: 900px;
     margin: 0;
@@ -148,7 +193,8 @@ const tags = ['Unity', 'C#', 'ECS', 'VFX', 'Editor tooling', 'TypeScript', 'Angu
     line-height: 1.45;
     letter-spacing: -0.01em;
   }
-  .lead em { font-style: normal; color: var(--accent); }
+  .lead a { color: var(--accent); text-underline-offset: 0.18em; text-decoration-thickness: 1px; }
+  .lead a:hover { text-decoration-thickness: 2px; }
 
   .stats {
     display: grid;
@@ -160,15 +206,47 @@ const tags = ['Unity', 'C#', 'ECS', 'VFX', 'Editor tooling', 'TypeScript', 'Angu
   .stat dt { font-size: 48px; font-weight: 500; letter-spacing: -0.03em; }
   .stat dd { margin: 6px 0 0; font-size: 15px; line-height: 1.45; color: var(--muted); }
 
-  .tags { display: flex; flex-wrap: wrap; gap: 8px; margin: 44px 0 0; padding: 0; list-style: none; }
+  /* skills */
+  .skills {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 32px 40px;
+  }
+  .tags { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
   .tags li {
     padding: 6px 12px;
     border: 1px solid var(--line);
     border-radius: 6px;
     font-family: var(--font-mono);
     font-size: 13px;
-    color: var(--muted);
+    color: var(--fg);
   }
+
+  /* experience */
+  .timeline { display: grid; gap: 28px; margin: 0; padding: 0; list-style: none; max-width: 900px; }
+  .timeline li { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 24px; }
+  .years { padding-top: 4px; font-size: 13px; color: var(--muted); }
+  .timeline h3 { margin: 0; font-size: 20px; font-weight: 500; }
+  .company { color: var(--muted); font-weight: 400; }
+  .timeline p { margin: 6px 0 0; font-size: 15px; line-height: 1.5; color: var(--muted); }
+
+  /* education & languages */
+  .background { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 32px 40px; max-width: 900px; }
+  .entry { margin: 0; font-size: 17px; line-height: 1.45; }
+  .entry b { display: block; font-weight: 500; }
+  .entry span { color: var(--muted); font-size: 15px; }
+  .languages { display: grid; gap: 8px; margin: 0; }
+  .languages div { display: flex; justify-content: space-between; gap: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+  .languages dt { font-size: 17px; }
+  .languages dd { margin: 0; font-size: 15px; color: var(--muted); }
+
+  /* contact */
+  .contacts { display: grid; gap: 14px; margin: 0; }
+  .contacts div { display: grid; grid-template-columns: 140px minmax(0, 1fr); align-items: baseline; gap: 24px; }
+  .contacts dt { font-size: 13px; color: var(--muted); }
+  .contacts dd { margin: 0; font-size: clamp(18px, 2.2vw, 27px); letter-spacing: -0.01em; overflow-wrap: anywhere; }
+  .contacts a { text-decoration: none; border-bottom: 1px solid var(--faint); transition: color 0.2s, border-color 0.2s; }
+  .contacts a:hover { color: var(--accent); border-color: var(--accent); }
 
   @media (max-width: 1024px) {
     .hero { grid-template-columns: minmax(0, 1fr); padding-top: 40px; }
@@ -178,6 +256,10 @@ const tags = ['Unity', 'C#', 'ECS', 'VFX', 'Editor tooling', 'TypeScript', 'Angu
       --tv-caption-right: var(--gutter);
       --tv-caption-bottom: 12px;
     }
-    .about { grid-template-columns: minmax(0, 1fr); gap: 20px; padding: 40px 0 56px; }
+    .section { grid-template-columns: minmax(0, 1fr); gap: 20px; padding: 40px 0; }
+    .last-section { padding-bottom: 64px; }
+  }
+  @media (max-width: 640px) {
+    .timeline li, .contacts div { grid-template-columns: minmax(0, 1fr); gap: 4px; }
   }
 </style>

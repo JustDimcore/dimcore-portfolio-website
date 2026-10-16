@@ -37,14 +37,20 @@ const total = String(channels.length).padStart(2, '0');
   <div class="caption mono" aria-live="polite">
     {first ? (
       <>
-        CH <span data-channel-number>01</span>/{total}{' · '}<b data-channel-title>{first.title}</b><b class="lost">NO SIGNAL</b>
-        {channels.length > 1 && <>{' · '}<button type="button" data-next>next ▸</button></>}
-        <span data-channel-link-wrap hidden={!first.link}>
-          {' · '}<a data-channel-link href={first.link} target="_blank" rel="noopener">YouTube ↗</a>
-        </span>
+        <div class="title"><b data-channel-title>{first.title}</b><b class="lost">NO SIGNAL</b></div>
+        <div class="meta">
+          CH <span data-channel-number>01</span>/{total}
+          {channels.length > 1 && <>{' · '}<button type="button" data-next>next ▸</button></>}
+          <span data-channel-link-wrap hidden={!first.link}>
+            {' · '}<a data-channel-link href={first.link} target="_blank" rel="noopener">YouTube ↗</a>
+          </span>
+        </div>
       </>
     ) : (
-      <>CH 01 · <b>NO SIGNAL</b></>
+      <>
+        <div class="title"><b>NO SIGNAL</b></div>
+        <div class="meta">CH 01</div>
+      </>
     )}
   </div>
 </div>
@@ -73,16 +79,22 @@ const total = String(channels.length).padStart(2, '0');
   .is-ready canvas { opacity: 1; }
   .switchable canvas { cursor: pointer; }
 
+  /* the channel's name large, like an on-screen label of an old TV; the rest small under it */
   .caption {
     position: absolute;
     right: var(--tv-caption-right, 24px);
     bottom: var(--tv-caption-bottom, 24px);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
     font-size: 12px;
     letter-spacing: 0.04em;
     text-align: right;
     text-transform: uppercase;
     color: var(--muted);
   }
+  .caption .title { font-size: clamp(16px, 4.6vw, 22px); letter-spacing: 0.03em; }
   .caption b { font-weight: 500; color: var(--accent); }
 
   /* the channel's video failed to load (crt-tv.ts sets data-signal="lost") */
