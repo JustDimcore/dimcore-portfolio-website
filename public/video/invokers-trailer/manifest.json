@@ -1,0 +1,43 @@
+{
+  "mime": "video/mp4; codecs=\"avc1.4d401e\"",
+  "duration": 30.07,
+  "init": "init.mp4",
+  "segments": [
+    {
+      "url": "000.m4s",
+      "start": 0.033,
+      "end": 5.4,
+      "bytes": 383735
+    },
+    {
+      "url": "001.m4s",
+      "start": 5.4,
+      "end": 9.533,
+      "bytes": 285865
+    },
+    {
+      "url": "002.m4s",
+      "start": 9.533,
+      "end": 16.333,
+      "bytes": 432390
+    },
+    {
+      "url": "003.m4s",
+      "start": 16.333,
+      "end": 21.8,
+      "bytes": 399876
+    },
+    {
+      "url": "004.m4s",
+      "start": 21.8,
+      "end": 25.933,
+      "bytes": 282469
+    },
+    {
+      "url": "005.m4s",
+      "start": 25.933,
+      "end": 30.033,
+      "bytes": 189318
+    }
+  ]
+}
