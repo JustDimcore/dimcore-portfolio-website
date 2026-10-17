@@ -3,7 +3,7 @@
 // brightened to full saturation, goes to the container as CSS variables:
 //   --tv-glow: "r g b" (0..255)   --tv-glow-strength: 0.1..1.4
 
-const AMBER = [232, 169, 75];       // no picture yet: the site's accent
+const AMBER = [232, 169, 75];       // no picture yet and the page set no --tv-glow-idle
 const SNOW = [205, 210, 220];       // static: cold white
 const SAMPLE_EVERY = 0.07;          // s
 const EASE = 6;                     // how fast the glow follows the picture, 1/s
@@ -19,8 +19,11 @@ export function createScreenGlow(container: HTMLElement): ScreenGlow {
   canvas.height = 12;
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
-  const color = [...AMBER];
-  const target = [...AMBER];
+  // the page can set its own colour for the glow before there's a picture: --tv-glow-idle: r g b
+  const idle = getComputedStyle(container).getPropertyValue('--tv-glow-idle').trim().split(/\s+/).map(Number);
+  const IDLE = idle.length === 3 && idle.every(Number.isFinite) ? idle : AMBER;
+  const color = [...IDLE];
+  const target = [...IDLE];
   let strength = 1;
   let targetStrength = 1;
   let sinceSample = SAMPLE_EVERY;
@@ -28,7 +31,7 @@ export function createScreenGlow(container: HTMLElement): ScreenGlow {
 
   function sample(video: HTMLVideoElement | null, picture: boolean) {
     if (!picture || !video || video.readyState < 2 || !ctx) {
-      target.splice(0, 3, ...(video ? SNOW : AMBER));
+      target.splice(0, 3, ...(video ? SNOW : IDLE));
       targetStrength = video ? 0.55 : 1;
       return;
     }

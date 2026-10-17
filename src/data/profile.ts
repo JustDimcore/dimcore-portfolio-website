@@ -8,35 +8,40 @@ export const links = {
   github: 'https://github.com/JustDimcore',
 };
 
-export const stats = [
-  { value: '15', label: 'years in software engineering' },   // since mid-2011
-  { value: '12', label: 'years of commercial game development in Unity / C#' },
-  { value: '9', label: 'years of web development in TypeScript / Angular' },
-];
-
 /** The core of the stack: highlighted wherever they appear in the skills. */
 export const coreSkills = new Set(['C#', '.NET', 'Unity', 'TypeScript', 'JavaScript', 'Angular']);
 
-export const skills: { title: string; items: string[] }[] = [
-  { title: 'Languages', items: ['C#', 'TypeScript', 'JavaScript', 'C++', 'SQL', 'HTML', 'CSS / SCSS'] },
+/** Skills as a spec sheet: games, web and what's shared, one line per area. */
+export const skills: { title: string; rows: { area: string; items: string[] }[] }[] = [
   {
-    title: 'Game development',
-    items: ['Unity', '.NET', 'ECS', 'Unity Physics', 'Multithreading', 'Editor tooling (IMGUI, Odin Inspector)', 'FMOD', 'Input systems'],
+    title: 'Games',
+    rows: [
+      { area: 'Engine', items: ['Unity', 'C#', '.NET', 'ECS', 'Unity Physics', 'Multithreading'] },
+      { area: 'UI', items: ['uGUI', 'NGUI', 'Doozy UI', 'MVVM / data binding'] },
+      { area: 'Tools', items: ['Unity Editor tools (IMGUI, Odin Inspector)', 'WPF'] },
+      { area: 'Audio & input', items: ['FMOD', 'Input systems'] },
+      { area: 'Platforms', items: ['Android', 'iOS', 'Windows', 'macOS', 'Xbox'] },
+    ],
   },
-  { title: 'Game UI', items: ['uGUI', 'NGUI', 'Doozy UI', 'MVVM / data binding'] },
   {
     title: 'Web',
-    items: ['Angular', 'AngularJS', 'React', 'RxJS', 'NgRx', 'NGXS', 'Redux', 'Angular Material', 'Tailwind CSS', 'Bootstrap'],
+    rows: [
+      { area: 'Frontend', items: ['TypeScript', 'JavaScript', 'Angular', 'AngularJS', 'React', 'HTML', 'CSS / SCSS'] },
+      { area: 'State', items: ['RxJS', 'NgRx', 'NGXS', 'Redux'] },
+      { area: 'UI', items: ['Angular Material', 'Tailwind CSS', 'Bootstrap'] },
+      { area: 'Backend & data', items: ['Node.js', 'Express', 'REST', 'WebSockets', 'GraphQL', 'PostgreSQL'] },
+      { area: 'Testing', items: ['Jest', 'Playwright', 'Cypress'] },
+    ],
   },
-  { title: 'Backend & data', items: ['Node.js', 'Express.js', 'REST APIs', 'WebSockets', 'GraphQL', 'PostgreSQL'] },
   {
-    title: '3D & graphics',
-    items: ['Three.js', 'WebGL', 'Blender', 'Autodesk Fusion', 'VFX and animation pipelines', 'Asset optimization'],
+    title: 'Everywhere',
+    rows: [
+      { area: '3D', items: ['Three.js', 'WebGL', 'Blender', 'Autodesk Fusion', 'VFX pipelines'] },
+      { area: 'Engineering', items: ['OOP', 'SOLID', 'Design patterns', 'Profiling and optimization'] },
+      { area: 'Tools', items: ['Git', 'SVN', 'GitHub', 'GitLab', 'Bitbucket', 'Jira', 'Docker'] },
+      { area: 'AI', items: ['Claude Code', 'Codex', 'GitHub Copilot', 'AI-driven SDLC'] },
+    ],
   },
-  { title: 'Architecture', items: ['OOP', 'SOLID', 'Design patterns', 'Profiling and optimization'] },
-  { title: 'Platforms', items: ['Android', 'iOS', 'Windows', 'macOS', 'Xbox'] },
-  { title: 'Tools', items: ['Git', 'SVN', 'GitHub', 'GitLab', 'Bitbucket', 'Jira', 'Docker', 'Jest', 'Playwright', 'Cypress'] },
-  { title: 'AI tools', items: ['Claude Code', 'Codex', 'GitHub Copilot', 'AI-driven SDLC'] },
 ];
 
 export interface Job {
@@ -87,7 +92,7 @@ export const experience: { track: string; jobs: Job[] }[] = [
       {
         role: 'Unity Developer / Frontend Developer',
         company: 'Plarium',
-        place: 'Kharkiv region, Ukraine',
+        place: 'Kharkiv, Ukraine',
         dates: '2014 – 2021',
         project: 'Android/iOS: Raid: Shadow Legends (100M+ downloads), Stormfall: Rise of Balur (20M+ downloads), Soldiers Inc: Mobile Warfare (10M+ downloads), Nords: Heroes of the North',
         points: [
@@ -132,7 +137,7 @@ export const experience: { track: string; jobs: Job[] }[] = [
       {
         role: 'Fullstack Developer (Angular / Node.js)',
         company: 'Plarium',
-        place: 'Kharkiv region, Ukraine',
+        place: 'Kharkiv, Ukraine',
         dates: '2018',
         points: [
           'Architected and built an image cataloging solution enabling seamless asset sharing between designers and programmers (Angular, Node.js, Google Auth).',

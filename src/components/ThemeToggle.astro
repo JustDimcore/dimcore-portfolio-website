@@ -1,0 +1,47 @@
+---
+// Light / dark switch. Shows the theme it switches to; the choice is remembered
+// (Base.astro puts it back on <html> before the first paint).
+---
+
+<button type="button" class="theme" data-theme-toggle aria-label="Switch colour theme">
+  <svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2" /><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6" /></svg>
+  <svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z" /></svg>
+</button>
+
+<script>
+  // Flips whatever is showing now (saved choice or the system setting) and remembers it.
+  for (const button of document.querySelectorAll<HTMLButtonElement>('[data-theme-toggle]')) {
+    button.addEventListener('click', () => {
+      const root = document.documentElement;
+      const now = root.dataset.theme ?? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+      const next = now === 'dark' ? 'light' : 'dark';
+      root.dataset.theme = next;
+      try { localStorage.setItem('theme', next); } catch { /* private mode: just for this page */ }
+    });
+  }
+</script>
+
+<style>
+  .theme {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    background: none;
+    color: var(--muted);
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .theme:hover { color: var(--accent); border-color: var(--accent); }
+  svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+  .moon { display: none; }
+  :global(:root[data-theme="light"]) .sun { display: none; }
+  :global(:root[data-theme="light"]) .moon { display: block; }
+  @media (prefers-color-scheme: light) {
+    :global(:root:not([data-theme="dark"])) .sun { display: none; }
+    :global(:root:not([data-theme="dark"])) .moon { display: block; }
+  }
+</style>

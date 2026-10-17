@@ -10,6 +10,10 @@ interface Props {
   channels?: TvChannel[];
   /** Click of the channel knob on every switch. */
   knobSound?: string;
+  /** Caption for a channel without a video. */
+  emptyLabel?: string;
+  /** A click on the TV opens the channel's link (with a hint by the cursor) instead of switching. */
+  clickOpensLink?: boolean;
 }
 
 const {
@@ -17,6 +21,8 @@ const {
   mobileModelUrl = '/models/crt-tv-1k.glb',
   channels = [],
   knobSound = '/audio/tv_knob.mp3',
+  emptyLabel = 'NO SIGNAL',
+  clickOpensLink = false,
 } = Astro.props;
 const first = channels[0];
 const total = String(channels.length).padStart(2, '0');
@@ -29,15 +35,19 @@ const total = String(channels.length).padStart(2, '0');
   data-mobile-model={mobileModelUrl}
   data-channels={JSON.stringify(channels)}
   data-knob-sound={knobSound}
+  data-click-link={clickOpensLink ? '' : undefined}
 >
   <canvas
-    aria-label={first ? 'Old CRT TV playing videos of projects; click to switch the channel' : 'Old CRT TV showing static'}
+    aria-label={!first ? 'Old CRT TV showing static'
+      : clickOpensLink ? 'Old CRT TV playing videos of projects; click to watch the trailer on YouTube'
+      : 'Old CRT TV playing videos of projects; click to switch the channel'}
     role="img"
   ></canvas>
+  {clickOpensLink && <span class="hint mono" aria-hidden="true">Watch on YouTube ↗</span>}
   <div class="caption mono" aria-live="polite">
     {first ? (
       <>
-        <div class="title"><b data-channel-title>{first.title}</b><b class="lost">NO SIGNAL</b></div>
+        <div class="title"><b data-channel-title>{first.title}</b><b class="lost">NO SIGNAL</b><b class="empty">{emptyLabel}</b></div>
         <div class="meta">
           CH <span data-channel-number>01</span>/{total}
           {channels.length > 1 && <>{' · '}<button type="button" data-next>next ▸</button></>}
@@ -83,7 +93,31 @@ const total = String(channels.length).padStart(2, '0');
     transition: opacity 0.35s ease;
   }
   .is-ready canvas { opacity: 1; }
-  .switchable canvas { cursor: pointer; }
+  /* only the TV itself is clickable (crt-tv.ts sets "over-tv" while the cursor is on it) */
+  .switchable.over-tv canvas { cursor: pointer; }
+  /* when a click opens the link, a channel without one isn't clickable */
+  .tv-scene[data-click-link]:not(.has-link) canvas { cursor: default; }
+
+  /* "Watch on YouTube" by the cursor (positioned by the script) */
+  .hint {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+    padding: 6px 10px;
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    background: var(--bg);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--accent);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .tv-scene.has-link.over-tv .hint { opacity: 1; }
 
   /* the channel's name large, like an on-screen label of an old TV; the rest small under it */
   .caption {
@@ -105,8 +139,11 @@ const total = String(channels.length).padStart(2, '0');
 
   /* the channel's video failed to load (crt-tv.ts sets data-signal="lost") */
   .caption .lost,
-  .tv-scene[data-signal="lost"] [data-channel-title] { display: none; }
+  .caption .empty,
+  .tv-scene:is([data-signal="lost"], [data-signal="none"]) [data-channel-title] { display: none; }
   .tv-scene[data-signal="lost"] .caption .lost { display: inline; }
+  /* a channel with no video at all (crt-tv.ts sets data-signal="none") */
+  .tv-scene[data-signal="none"] .caption .empty { display: inline; }
   .caption a,
   .caption button {
     padding: 0;
@@ -133,6 +170,19 @@ const total = String(channels.length).padStart(2, '0');
     const title = el.querySelector('[data-channel-title]');
     const linkWrap = el.querySelector<HTMLElement>('[data-channel-link-wrap]');
     const link = el.querySelector<HTMLAnchorElement>('[data-channel-link]');
+    const canvas = el.querySelector('canvas')!;
+    const hint = el.querySelector<HTMLElement>('.hint');
+    const clickOpensLink = 'clickLink' in el.dataset;
+    let current = channels[0];
+
+    // the hint follows the cursor; it shows while the cursor is on the TV itself (CSS)
+    if (hint) {
+      canvas.addEventListener('pointermove', (e) => {
+        if (e.pointerType !== 'mouse') return;
+        const r = el.getBoundingClientRect();
+        hint.style.transform = `translate(${e.clientX - r.left + 16}px, ${e.clientY - r.top + 18}px)`;
+      });
+    }
 
     // phones get the model with lighter textures
     const small = window.matchMedia('(max-width: 768px)').matches;
@@ -140,19 +190,28 @@ const total = String(channels.length).padStart(2, '0');
     import('../scenes/crt-tv').then(({ mount }) => {
       const tv = mount(el, {
         modelUrl: (small && el.dataset.mobileModel) || el.dataset.model!,
-        videos: channels.map((c) => c.video),
+        videos: channels.map((c) => c.video ?? ''),
         clickSound: el.dataset.knobSound,
+        onScreenClick: clickOpensLink
+          ? () => { if (current?.link) window.open(current.link, '_blank', 'noopener'); }
+          : undefined,
         onChannel(index) {
           const channel = channels[index];
+          current = channel;
+          el.classList.toggle('has-link', !!channel.link);
           if (number) number.textContent = String(index + 1).padStart(2, '0');
           if (title) title.textContent = channel.title;
           if (linkWrap && link) {
             linkWrap.hidden = !channel.link;
             if (channel.link) link.href = channel.link;
           }
+          // the page can follow what's on: el.addEventListener('tv:channel', (e) => e.detail)
+          el.dispatchEvent(new CustomEvent('tv:channel', { detail: index }));
         },
       });
       el.querySelector('[data-next]')?.addEventListener('click', () => tv.next());
+      // the page can tune the TV: el.dispatchEvent(new CustomEvent('tv:select', { detail: index }))
+      el.addEventListener('tv:select', (e) => tv.select((e as CustomEvent<number>).detail));
     });
   }
 </script>

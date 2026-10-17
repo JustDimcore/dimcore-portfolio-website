@@ -1,0 +1,194 @@
+---
+import Base from '../layouts/Base.astro';
+import TvScene from '../components/TvScene.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import { projects } from '../data/projects';
+import { projectChannels } from '../data/channels';
+---
+
+<Base
+  title="Projects — Dmytro Ilchenko"
+  description="Games Dmytro Ilchenko worked on: Invokers: Titan Legacy, Raid: Shadow Legends, Stormfall, Soldiers Inc, Nords and two projects under NDA."
+>
+  <SiteHeader current="projects" />
+
+  <main class="wrap page">
+    <div class="list">
+      <h1>Projects</h1>
+      <p class="intro">Games I've worked on, newest first. Scroll and the TV tunes in to each one, except the two under NDA.</p>
+
+      {projects.map((p, i) => (
+        <article class:list={['project', { nda: p.nda, 'is-on': i === 0 }]} data-project={i} aria-labelledby={`project-${i}`}>
+          <p class="meta">{p.studio} · {p.years}{!p.nda && <span class="on-air">On the TV</span>}</p>
+          {p.nda ? (
+            <>
+              <!-- no name to show: the line describes the game, and says why -->
+              <h2 id={`project-${i}`}>{p.title}</h2>
+              <p class="nda-note">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2" /><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" /></svg>
+                <b>Under NDA</b><span>the name and footage can't be shown</span>
+              </p>
+            </>
+          ) : (
+            <h2 id={`project-${i}`}>{p.title}</h2>
+          )}
+          <p class="sub">{p.genre} · {p.platforms} · {p.role}</p>
+          <p class="summary">{p.summary}</p>
+          <ul class="points">{p.points.map((x) => <li>{x}</li>)}</ul>
+          <p class="stack">{p.stack.join(', ')}</p>
+          {(p.site || p.link) && (
+            <p class="links">
+              {p.site && <a href={p.site.url} target="_blank" rel="noopener">{p.site.label} ↗</a>}
+              {p.link && <a href={p.link} target="_blank" rel="noopener">Trailer on YouTube ↗</a>}
+            </p>
+          )}
+        </article>
+      ))}
+    </div>
+
+    <!-- stays in view and plays the project being read -->
+    <aside class="screen">
+      <div class="sticky"><TvScene channels={projectChannels} emptyLabel="UNDER NDA" clickOpensLink /></div>
+    </aside>
+  </main>
+
+  <SiteFooter />
+</Base>
+
+<script>
+  // The project being read is the last one whose top has passed a line a bit above the middle
+  // of what's visible (below the pinned TV on narrow screens). The highlight moves right away;
+  // the TV tunes in once the scrolling settles, so a quick scroll doesn't flick through every
+  // channel on the way. "next" on the TV moves the highlight too.
+  const tv = document.querySelector<HTMLElement>('[data-tv-scene]');
+  const screen = document.querySelector<HTMLElement>('.screen');
+  const items = [...document.querySelectorAll<HTMLElement>('[data-project]')];
+  const narrow = matchMedia('(max-width: 1024px)');
+  const SETTLE = 120;   // ms of no change before the TV switches
+
+  function reading() {
+    const top = narrow.matches && screen ? Math.max(0, screen.getBoundingClientRect().bottom) : 0;
+    const line = top + (innerHeight - top) * 0.4;
+    // at the very bottom the last project may never reach the line: it's the one being read then
+    if (innerHeight + scrollY >= document.documentElement.scrollHeight - 2) return items.length - 1;
+    let index = 0;
+    items.forEach((el, i) => { if (el.getBoundingClientRect().top <= line) index = i; });
+    return index;
+  }
+
+  // Room after the list so the last project can reach the line too; the footer counts towards it.
+  const list = document.querySelector<HTMLElement>('.list');
+  const footer = document.querySelector<HTMLElement>('footer');
+  function makeRoom() {
+    if (!list || !items.length) return;
+    const top = narrow.matches && screen ? screen.offsetHeight : 0;
+    const below = (innerHeight - top) * 0.6;
+    const last = items[items.length - 1].offsetHeight + (footer?.offsetHeight ?? 0);
+    list.style.paddingBottom = `${Math.max(48, Math.ceil(below - last))}px`;
+  }
+  makeRoom();
+  window.addEventListener('resize', makeRoom);
+
+  let wanted = 0;
+  let timer = 0;
+  let frame = 0;
+  function onScroll() {
+    if (frame) return;
+    frame = requestAnimationFrame(() => {
+      frame = 0;
+      const index = reading();
+      if (index === wanted) return;
+      wanted = index;
+      highlight(index);
+      clearTimeout(timer);
+      timer = window.setTimeout(() => tv?.dispatchEvent(new CustomEvent('tv:select', { detail: wanted })), SETTLE);
+    });
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll);
+  function highlight(on: number) {
+    items.forEach((el, i) => el.classList.toggle('is-on', i === on));
+  }
+  tv?.addEventListener('tv:channel', (e) => highlight((e as CustomEvent<number>).detail));
+
+  // opened halfway down (reload, back): start from the project in view
+  wanted = reading();
+  highlight(wanted);
+  if (wanted) tv?.dispatchEvent(new CustomEvent('tv:select', { detail: wanted }));
+</script>
+
+<style>
+  /* the list on the left, the TV on the right */
+  .page { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.12fr); gap: 56px; }
+  .screen { margin-right: -56px; }
+  .sticky { position: sticky; top: 0; height: min(100vh, 640px); --tv-caption-right: 64px; --tv-caption-bottom: 26px; }
+
+  h1 { margin: 48px 0 0; font-size: 44px; font-weight: 500; letter-spacing: -0.03em; }
+  .intro { margin: 14px 0 40px; font-size: 17px; line-height: 1.55; color: var(--muted); }
+
+  .project { position: relative; padding: 40px 0 64px; border-top: 1px solid var(--line); transition: opacity 0.15s; }
+  /* the project on the TV: a bar at its side and a label; the others step back */
+  .project::before {
+    content: "";
+    position: absolute;
+    top: 40px;
+    bottom: 64px;
+    left: calc(-1 * min(28px, var(--gutter) - 6px));
+    width: 2px;
+    background: var(--accent);
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .project.is-on::before { opacity: 1; }
+  .project:not(.is-on) { opacity: 0.5; }
+  .project:not(.is-on):hover { opacity: 1; }
+  .on-air { display: none; align-items: center; gap: 6px; color: var(--accent); }
+  .on-air::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .is-on .on-air { display: inline-flex; }
+  .list { padding-bottom: 48px; }
+  .meta { display: flex; align-items: center; gap: 10px; margin: 0 0 8px; font-size: 14px; color: var(--muted); }
+  h2 { margin: 0; font-size: 32px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.15; }
+  /* under NDA: the heading is a description, set quieter; a badge with a lock says why */
+  .nda h2 { font-weight: 400; color: var(--muted); }
+  .nda-note {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 8px;
+    margin: 12px 0 0;
+    padding: 5px 12px 5px 10px;
+    border: 1px solid var(--faint);
+    border-radius: 8px;
+    font-size: 14px;
+    line-height: 1.3;
+  }
+  .nda-note svg { flex: none; width: 15px; height: 15px; fill: none; stroke: var(--accent); stroke-width: 1.8; stroke-linecap: round; }
+  .nda-note b { font-weight: 500; color: var(--fg); }
+  .nda-note span { color: var(--muted); }
+  .nda-note span::before { content: "· "; }
+  .sub { margin: 8px 0 0; font-size: 15px; color: var(--muted); }
+  .summary { margin: 20px 0 0; font-size: 19px; line-height: 1.5; }
+  .points { margin: 14px 0 0; padding-left: 18px; font-size: 16px; line-height: 1.55; color: var(--muted); }
+  .points li + li { margin-top: 6px; }
+  .points li::marker { color: var(--faint); }
+  .stack { margin: 18px 0 0; font-size: 14px; color: var(--muted); }
+  .links { display: flex; flex-wrap: wrap; gap: 8px 24px; margin: 14px 0 0; }
+  .links a { color: var(--accent); text-decoration: none; }
+  .links a:hover { text-decoration: underline; text-underline-offset: 0.18em; }
+
+  /* narrower screens: a smaller TV pinned to the top, the projects scroll under it */
+  @media (max-width: 1024px) {
+    .page { grid-template-columns: minmax(0, 1fr); gap: 0; }
+    .screen { order: -1; position: sticky; top: 0; z-index: 2; margin: 0 calc(-1 * var(--gutter)); background: var(--bg); border-bottom: 1px solid var(--line); }
+    .sticky { position: static; height: 40vh; --tv-caption-right: var(--gutter); --tv-caption-bottom: 8px; }
+    h1 { margin-top: 32px; font-size: 36px; }
+  }
+  @media (max-width: 640px) {
+    h2 { font-size: 26px; }
+    .summary { font-size: 17px; }
+    /* the explanation goes on its own line, without the separator */
+    .nda-note span { flex-basis: 100%; }
+    .nda-note span::before { content: none; }
+  }
+</style>

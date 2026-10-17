@@ -1,29 +1,21 @@
 ---
 import Base from '../layouts/Base.astro';
 import TvScene from '../components/TvScene.astro';
+import ThemeToggle from '../components/ThemeToggle.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import SiteHeader from '../components/SiteHeader.astro';
 import { channels } from '../data/channels';
-import { links, stats, coreSkills, skills, experience, education, languages, contacts } from '../data/profile';
+import { links, coreSkills, skills, experience, education, languages, contacts } from '../data/profile';
 ---
 
 <Base title="Dmytro Ilchenko — Software Engineer">
   <!-- slides in once the main menu is scrolled away (script below) -->
-  <header class="bar" data-bar inert>
-    <div class="wrap bar-inner">
-      <a class="bar-name mono" href="#top" aria-label="Dmytro Ilchenko, back to top">
-        <span aria-hidden="true"><span class="prompt">~$ </span>dmytro<span class="sep">_</span>ilchenko<span class="cursor"></span></span>
-      </a>
-      <nav class="bar-nav mono" aria-label="Sections">
-        <a class="current" href="#about" aria-current="location"><i>01</i>About me</a>
-        <a href={links.projects}><i>02</i>Projects</a>
-        <a href={links.linkedin} target="_blank" rel="noopener"><i>03</i>LinkedIn<span class="ext"> ↗</span></a>
-        <a href={links.github} target="_blank" rel="noopener"><i>04</i>GitHub<span class="ext"> ↗</span></a>
-      </nav>
-    </div>
-  </header>
+  <SiteHeader home />
 
   <main class="wrap" id="top">
     <section class="hero">
       <div class="intro">
+        <div class="intro-theme"><ThemeToggle /></div>
         <h1 aria-label="Dmytro Ilchenko">
           <span aria-hidden="true"><span class="prompt">~$ </span>dmytro<span class="sep">_</span>ilchenko<span class="cursor"></span></span>
         </h1>
@@ -35,8 +27,7 @@ import { links, stats, coreSkills, skills, experience, education, languages, con
           {/* "Play something →" comes back once there are games to play here */}
           <a href="#about"><i>01</i>About me</a>
           <a href={links.projects}><i>02</i>Projects</a>
-          <a href={links.linkedin} target="_blank" rel="noopener"><i>03</i>LinkedIn ↗</a>
-          <a href={links.github} target="_blank" rel="noopener"><i>04</i>GitHub ↗</a>
+          <a href="#contact"><i>03</i>Contact</a>
         </nav>
       </div>
 
@@ -46,45 +37,50 @@ import { links, stats, coreSkills, skills, experience, education, languages, con
     </section>
 
     <section class="section" id="about" aria-labelledby="about-title">
-      <h2 id="about-title" class="label mono">About</h2>
-      <div>
-        <p class="lead">
-          <span class="hi">Hi, I'm Dmytro, a software engineer.</span> I mostly work on game development and the web.
-          Since 2014 I've worked on 7 game projects and more than 10 websites, and taken part in 4 game jams.
-          Some of the games I've worked on are in <a href={links.projects}>Projects</a>.
-        </p>
-        <dl class="stats">
-          {stats.map((s) => (
-            <div class="stat"><dt>{s.value}</dt><dd>{s.label}</dd></div>
-          ))}
-        </dl>
-      </div>
+      <h2 id="about-title" class="label">About</h2>
+      <!-- the years are part of the story, not a row of big numbers -->
+      <p class="lead">
+        <span class="hi">Hi, I'm Dmytro, a software engineer.</span> I mostly work on game development and the web:{' '}
+        <b>15 years</b> in software, <b>12</b> of them making games in Unity and C#, and <b>9</b> on the web with TypeScript
+        and Angular. Since 2014 I've worked on 7 game projects and more than 10 websites, and taken part in 4 game jams.
+        Some of the games I've worked on are in <a href={links.projects}>Projects</a>.
+      </p>
     </section>
 
     <section class="section" aria-labelledby="skills-title">
-      <h2 id="skills-title" class="label mono">Skills</h2>
-      <div class="skills">
+      <h2 id="skills-title" class="label">Skills</h2>
+      <!-- one line per area; the core of the stack stands out -->
+      <div class="sheet">
         {skills.map((group) => (
           <div>
-            <h3 class="group mono">{group.title}</h3>
-            <ul class="tags">
-              {group.items.map((item) => <li class:list={[{ core: coreSkills.has(item) }]}>{item}</li>)}
-            </ul>
+            <h3>{group.title}</h3>
+            <dl>
+              {group.rows.map((row) => (
+                <div>
+                  <dt>{row.area}</dt>
+                  <dd>
+                    {row.items.map((item, i) => (
+                      <>{coreSkills.has(item) ? <b>{item}</b> : item}{i < row.items.length - 1 && ', '}</>
+                    ))}
+                  </dd>
+                </div>
+              ))}
+            </dl>
           </div>
         ))}
       </div>
     </section>
 
     <section class="section" aria-labelledby="experience-title">
-      <h2 id="experience-title" class="label mono">Experience</h2>
+      <h2 id="experience-title" class="label">Experience</h2>
       <div class="tracks">
         {experience.map((track) => (
           <div>
-            <h3 class="group mono">{track.track}</h3>
+            <h3 class="group">{track.track}</h3>
             <ol class="timeline">
               {track.jobs.map((job) => (
                 <li>
-                  <span class="years mono">{job.dates}</span>
+                  <span class="years">{job.dates}</span>
                   <div>
                     <h4>{job.role} <span class="company">· {job.company}</span></h4>
                     {job.place && <p class="place">{job.place}</p>}
@@ -102,16 +98,16 @@ import { links, stats, coreSkills, skills, experience, education, languages, con
     </section>
 
     <section class="section" aria-labelledby="background-title">
-      <h2 id="background-title" class="label mono">Education</h2>
+      <h2 id="background-title" class="label">Education</h2>
       <div class="background">
         <div>
-          <h3 class="group mono">Education</h3>
+          <h3 class="group">Education</h3>
           {education.map((e) => (
             <p class="entry"><b>{e.school}</b><span>{e.degree} · {e.years}</span></p>
           ))}
         </div>
         <div>
-          <h3 class="group mono">Languages</h3>
+          <h3 class="group">Languages</h3>
           <dl class="languages">
             {languages.map((l) => (
               <div><dt>{l.name}</dt><dd>{l.level}</dd></div>
@@ -121,16 +117,16 @@ import { links, stats, coreSkills, skills, experience, education, languages, con
       </div>
     </section>
 
-    <section class="section last-section" aria-labelledby="contact-title">
-      <h2 id="contact-title" class="label mono">Contact</h2>
+    <section class="section last-section" id="contact" aria-labelledby="contact-title">
+      <h2 id="contact-title" class="label">Contact</h2>
       <dl class="contacts">
         {contacts.map((c) => (
           <div>
-            <dt class="mono">{c.label}</dt>
+            <dt>{c.label}</dt>
             <dd>
               <a href={c.href} {...(c.href.startsWith('http') ? { target: '_blank', rel: 'noopener' } : {})}>{c.text}</a>
               {c.href.startsWith('mailto:') && (
-                <button type="button" class="copy mono" data-copy={c.text} aria-label={`Copy ${c.text}`}>copy</button>
+                <button type="button" class="copy" data-copy={c.text} aria-label={`Copy ${c.text}`}>copy</button>
               )}
             </dd>
           </div>
@@ -139,9 +135,7 @@ import { links, stats, coreSkills, skills, experience, education, languages, con
     </section>
   </main>
 
-  <footer class="wrap">
-    <p class="footer mono">© {new Date().getFullYear()} Dmytro Ilchenko · built with Astro &amp; Three.js</p>
-  </footer>
+  <SiteFooter />
 </Base>
 
 <script>
@@ -171,28 +165,6 @@ import { links, stats, coreSkills, skills, experience, education, languages, con
 </script>
 
 <style>
-  /* sticky bar */
-  .bar {
-    position: fixed;
-    inset: 0 0 auto;
-    z-index: 20;
-    background: rgba(11, 12, 12, 0.82);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border-bottom: 1px solid var(--line);
-    transform: translateY(-100%);
-    visibility: hidden;
-    transition: transform 0.3s ease, visibility 0s linear 0.3s;
-  }
-  .bar.is-shown { transform: none; visibility: visible; transition: transform 0.3s ease; }
-  @media (prefers-reduced-motion: reduce) { .bar, .bar.is-shown { transition: none; } }
-  .bar-inner { display: flex; align-items: center; justify-content: space-between; gap: 24px; height: 60px; }
-  .bar-name { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; text-decoration: none; white-space: nowrap; }
-  .bar-nav { display: flex; gap: 28px; font-size: 14px; white-space: nowrap; }
-  .bar-nav a { display: flex; align-items: baseline; gap: 8px; text-decoration: none; transition: color 0.2s; }
-  .bar-nav i { font-style: normal; font-size: 0.8em; color: var(--faint); transition: color 0.2s; }
-  .bar-nav a:hover, .bar-nav a.current, .bar-name:hover { color: var(--accent); }
-  .bar-nav a:hover i { color: var(--muted); }
   /* anchors land below the bar */
   .section { scroll-margin-top: 60px; }
 
@@ -229,14 +201,11 @@ import { links, stats, coreSkills, skills, experience, education, languages, con
   }
   @keyframes blink { 50% { opacity: 0; } }
 
+  .intro { position: relative; }
+  .intro-theme { position: absolute; top: 2px; right: 0; }
+
   .role { margin: 22px 0 0; font-size: 19px; line-height: 1.4; }
-  .role small {
-    display: block;
-    margin-top: 6px;
-    font-family: var(--font-mono);
-    font-size: 14px;
-    color: var(--muted);
-  }
+  .role small { display: block; margin-top: 4px; font-size: 16px; color: var(--muted); }
 
   /* a numbered channel list, like the menu of an old TV */
   .intro nav { display: flex; flex-direction: column; max-width: 320px; margin-top: 36px; }
@@ -246,16 +215,13 @@ import { links, stats, coreSkills, skills, experience, education, languages, con
     gap: 18px;
     padding: 10px 0;
     border-bottom: 1px solid var(--line);
-    font-family: var(--font-mono);
-    font-size: 16px;
+    font-size: 17px;
     text-decoration: none;
     transition: color 0.2s;
   }
   /* the numbers are a quiet hint, the names carry the menu */
-  .intro nav a i { font-style: normal; font-size: 0.8em; color: var(--faint); transition: color 0.2s; }
-  .intro nav a.current,
+  .intro nav a i { font-style: normal; font-size: 0.75em; font-variant-numeric: tabular-nums; color: var(--faint); transition: color 0.2s; }
   .intro nav a:hover { color: var(--accent); }
-  .intro nav a.current i,
   .intro nav a:hover i { color: var(--muted); }
 
   .stage {
@@ -277,25 +243,9 @@ import { links, stats, coreSkills, skills, experience, education, languages, con
   }
   .hero + .section { margin-top: 24px; }
   .last-section { padding-bottom: 96px; }
-  /* section headings as code comments: // about */
-  .label {
-    margin: 0;
-    padding-top: 4px;
-    font-size: 18px;
-    font-weight: 400;
-    text-transform: lowercase;
-    white-space: nowrap;   /* a comment is one line */
-    color: var(--accent);
-  }
-  .label::before { content: "// "; }
-  .group {
-    margin: 0 0 12px;
-    font-size: 13px;
-    font-weight: 400;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--muted);
-  }
+  /* plain headings: the name is the only bit of code on the page */
+  .label { margin: 0; font-size: 26px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.2; }
+  .group { margin: 0 0 12px; font-size: 15px; font-weight: 400; color: var(--muted); }
 
   /* about */
   /* the greeting stands out, the rest of the text is quieter */
@@ -308,44 +258,24 @@ import { links, stats, coreSkills, skills, experience, education, languages, con
     letter-spacing: -0.01em;
     color: var(--muted);
   }
-  .lead .hi { color: var(--fg); }
+  .lead .hi, .lead b { font-weight: 400; color: var(--fg); }
   .lead a { color: var(--accent); text-underline-offset: 0.18em; text-decoration-thickness: 1px; }
   .lead a:hover { text-decoration-thickness: 2px; }
 
-  .stats {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 32px;
-    max-width: 900px;
-    margin: 64px 0 0;
-  }
-  .stat dt { font-size: 48px; font-weight: 500; letter-spacing: -0.03em; }
-  .stat dd { margin: 6px 0 0; font-size: 15px; line-height: 1.45; color: var(--muted); }
-
-  /* skills */
-  .skills {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 32px 40px;
-  }
-  .tags { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
-  .tags li {
-    padding: 6px 12px;
-    border: 1px solid var(--line);
-    border-radius: 6px;
-    font-family: var(--font-mono);
-    font-size: 13px;
-    color: var(--muted);
-  }
-  /* the core of the stack */
-  .tags li.core { color: var(--fg); border-color: rgb(232 169 75 / 0.55); }
+  /* skills: a spec sheet */
+  .sheet { display: grid; gap: 28px; max-width: 900px; }
+  .sheet h3 { margin: 0 0 6px; font-size: 15px; font-weight: 400; }
+  .sheet dl { margin: 0; }
+  .sheet dl div { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 24px; padding: 9px 0; border-top: 1px solid var(--line); }
+  .sheet dt, .sheet dd { margin: 0; font-size: 15px; line-height: 1.55; color: var(--muted); }
+  .sheet b { font-weight: 400; color: var(--fg); }
 
   /* experience */
   .tracks { display: grid; gap: 48px; max-width: 900px; }
   .tracks .group { margin-bottom: 20px; }
   .timeline { display: grid; gap: 32px; margin: 0; padding: 0; list-style: none; }
   .timeline > li { display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 24px; }
-  .years { padding-top: 4px; font-size: 13px; color: var(--muted); }
+  .years { padding-top: 3px; font-size: 15px; font-variant-numeric: tabular-nums; color: var(--muted); }
   .timeline h4 { margin: 0; font-size: 20px; font-weight: 500; }
   .company { color: var(--muted); font-weight: 400; }
   .place { margin: 2px 0 0; font-size: 14px; color: var(--muted); }
@@ -367,7 +297,7 @@ import { links, stats, coreSkills, skills, experience, education, languages, con
   /* contact */
   .contacts { display: grid; gap: 14px; margin: 0; }
   .contacts div { display: grid; grid-template-columns: 140px minmax(0, 1fr); align-items: baseline; gap: 24px; }
-  .contacts dt { font-size: 13px; color: var(--muted); }
+  .contacts dt { font-size: 15px; color: var(--muted); }
   .contacts dd { margin: 0; font-size: clamp(18px, 2.2vw, 27px); letter-spacing: -0.01em; overflow-wrap: anywhere; }
   .contacts a { text-decoration: none; border-bottom: 1px solid var(--faint); transition: color 0.2s, border-color 0.2s; }
   .contacts a:hover { color: var(--accent); border-color: var(--accent); }
@@ -377,6 +307,7 @@ import { links, stats, coreSkills, skills, experience, education, languages, con
     border: 1px solid var(--faint);
     border-radius: 999px;
     background: none;
+    font: inherit;
     font-size: 12px;
     color: var(--muted);
     vertical-align: middle;
@@ -385,7 +316,6 @@ import { links, stats, coreSkills, skills, experience, education, languages, con
   }
   .contacts .copy:hover { color: var(--accent); border-color: var(--accent); }
 
-  .footer { margin: 0; padding-top: 24px; padding-bottom: 40px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); }
 
   @media (max-width: 1024px) {
     .hero { grid-template-columns: minmax(0, 1fr); padding-top: 40px; }
@@ -398,21 +328,11 @@ import { links, stats, coreSkills, skills, experience, education, languages, con
     .section, #about { grid-template-columns: minmax(0, 1fr); gap: 20px; padding: 40px 0; }
     .last-section { padding-bottom: 64px; }
   }
-  @media (max-width: 860px) {
-    .bar-nav i { display: none; }
-    .bar-nav { gap: 18px; }
-  }
   @media (max-width: 640px) {
-    .bar-inner { height: 52px; gap: 12px; }
-    .bar-name { font-size: 14px; }
-    .bar-name .prompt, .bar-name .cursor { display: none; }
-    .bar-nav { gap: 12px; font-size: 12px; }
     .section { scroll-margin-top: 52px; }
   }
-  /* phones: the bar is just the section links, spread across */
   @media (max-width: 480px) {
-    .bar-name, .bar-nav .ext { display: none; }
-    .bar-nav { width: 100%; justify-content: space-between; font-size: 13px; }
-    .timeline > li, .contacts div { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+    .timeline > li, .contacts div, .sheet dl div { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+    .sheet dt { font-size: 13px; }
   }
 </style>

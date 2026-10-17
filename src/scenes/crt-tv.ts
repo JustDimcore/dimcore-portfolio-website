@@ -20,6 +20,9 @@ const DAMPING = 4;                               // how fast the view follows th
 const TILT_RANGE = 15;                           // degrees of phone tilt for the full swing
 const TILT_DRIFT = 0.01;                         // how fast the neutral tilt follows the hand, per event
 
+// The TV's body in model metres, without the antennas and the cable: the clickable area.
+const BODY_BOX = new THREE.Box3(new THREE.Vector3(-0.2, 0, -0.21), new THREE.Vector3(0.17, 0.3, 0.14));
+
 const SWITCH_SNOW = 400;                         // ms of snow between channels, at least
 const KNOB_DETENT = THREE.MathUtils.degToRad(30); // channel knob: 12 positions, one per click
 const KNOB_TURN = 0.18;                          // s for the knob to snap into the next position
@@ -32,17 +35,22 @@ function snap(x: number) {
 
 export interface CrtTvOptions {
   modelUrl: string;
-  /** Videos for the channels, played muted in a loop. Without them the TV shows snow. */
+  /** Videos for the channels, played muted in a loop. Without them the TV shows snow;
+   *  an empty string is a channel with nothing on it (snow, data-signal="none"). */
   videos?: string[];
   /** Called when the TV switches to another channel (also for the first one). */
   onChannel?: (index: number) => void;
   /** Sound of the channel knob clicking into the next position. */
   clickSound?: string;
+  /** What a click on the TV does instead of switching to the next channel. */
+  onScreenClick?: () => void;
 }
 
 export interface CrtTv {
   /** Switches to the next channel. */
   next(): void;
+  /** Switches to the given channel, turning the knob as far as it takes. */
+  select(index: number): void;
   /** Stops rendering and frees GPU resources. */
   dispose(): void;
 }
@@ -51,9 +59,10 @@ export interface CrtTv {
  * Renders the CRT TV into the container's <canvas>. The TV slightly turns to follow the cursor,
  * its screen plays the channel videos; a click on the TV switches to the next one through snow.
  * The picture's state goes to the container as data-signal: "on", "off" (snow while the video
- * loads or waits for a click) or "lost" (the channel's video failed to load).
+ * loads or waits for a click), "lost" (the channel's video failed to load) or "none" (the channel
+ * has no video at all).
  */
-export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = [], onChannel, clickSound }: CrtTvOptions): CrtTv {
+export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = [], onChannel, clickSound, onScreenClick }: CrtTvOptions): CrtTv {
   const canvas = container.querySelector('canvas');
   if (!canvas) throw new Error('crt-tv: container has no <canvas>');
   container.dataset.signal = 'off';
@@ -126,6 +135,7 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
       waitingForClick = true;
       return;
     }
+    if (!videoUrls[channel]) return;
     const ch = videoFor(channel);
     ch.video.play().catch((err: DOMException) => {
       // autoplay refused (power saving, browser settings): stays on snow until a click
@@ -143,6 +153,11 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
     screen?.setSignal(false);
     screen?.showChannel(index + 1);
     container.dataset.signal = 'off';
+    // a channel without a video stays on snow (projects under NDA)
+    if (!videoUrls[index]) {
+      container.dataset.signal = 'none';
+      return;
+    }
 
     const ch = videoFor(index);
     if (ch.video.error) ch.reload();   // it failed to load before: try again
@@ -155,7 +170,8 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
         screen?.setVideo(video);
         screen?.setSignal(true);
         container.dataset.signal = 'on';
-        if (videoUrls.length > 1) videoFor((index + 1) % videoUrls.length);
+        const nextUrl = videoUrls[(index + 1) % videoUrls.length];
+        if (videoUrls.length > 1 && nextUrl) videoFor((index + 1) % videoUrls.length);
       }, Math.max(0, earliest - performance.now()));
     }, { once: true });
     playVideo();
@@ -176,15 +192,77 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
       playVideo();
       return;
     }
+    turnKnob(1);
+    tune((channel + 1) % videoUrls.length);
+  }
+
+  function select(index: number) {
+    if (index < 0 || index >= videoUrls.length) return;
+    // before the model is in, just remember it: loading tunes to it
+    if (!ready) {
+      channel = index;
+      return;
+    }
+    if (index === channel) return;
+    wantsPlay = true;
+    turnKnob(index - channel);
+    tune(index);
+  }
+
+  function turnKnob(detents: number) {
     if (knob) {
       knobFrom = knob.rotation.z;
-      knobTo -= KNOB_DETENT;
+      knobTo -= KNOB_DETENT * detents;
       knobT = 0;
     }
     click?.play();
-    tune((channel + 1) % videoUrls.length);
   }
-  if (videoUrls.length) canvas.addEventListener('click', next);
+  // Only the TV is clickable, not the empty canvas around it: a rectangle on screen around
+  // its body (BODY_BOX), without the antennas and the cable. While the cursor is in it,
+  // the container has the class "over-tv".
+  const corner = new THREE.Vector3();
+  function overTv(e: MouseEvent) {
+    if (!ready) return false;
+    const r = canvas!.getBoundingClientRect();
+    const x = ((e.clientX - r.left) / r.width) * 2 - 1;
+    const y = -((e.clientY - r.top) / r.height) * 2 + 1;
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (let i = 0; i < 8; i++) {
+      corner.set(
+        i & 1 ? BODY_BOX.max.x : BODY_BOX.min.x,
+        i & 2 ? BODY_BOX.max.y : BODY_BOX.min.y,
+        i & 4 ? BODY_BOX.max.z : BODY_BOX.min.z,
+      ).project(camera);
+      minX = Math.min(minX, corner.x); maxX = Math.max(maxX, corner.x);
+      minY = Math.min(minY, corner.y); maxY = Math.max(maxY, corner.y);
+    }
+    return x >= minX && x <= maxX && y >= minY && y <= maxY;
+  }
+  function onHover(e: PointerEvent) {
+    if (e.pointerType !== 'mouse') return;   // touch has no hover; a tap is checked on click
+    container.classList.toggle('over-tv', overTv(e));
+  }
+  function onHoverEnd() {
+    container.classList.remove('over-tv');
+  }
+
+  // A click on the TV switches the channel, or does what the page asked for; either way it
+  // starts a picture that was waiting for one.
+  function onClick(e: MouseEvent) {
+    if (!overTv(e)) return;
+    if (!onScreenClick) return next();
+    if (waitingForClick && ready) {
+      waitingForClick = false;
+      wantsPlay = true;
+      playVideo();
+    }
+    onScreenClick();
+  }
+  if (videoUrls.length) {
+    canvas.addEventListener('click', onClick);
+    canvas.addEventListener('pointermove', onHover);
+    canvas.addEventListener('pointerleave', onHoverEnd);
+  }
 
   // Open the audio output while the button is still held down, so the first click isn't clipped.
   const warmUpSound = () => click?.warmUp();
@@ -409,7 +487,7 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
     ready = true;
     dirty = true;
     container.classList.add('is-ready');
-    if (videoUrls.length) tune(0);
+    if (videoUrls.length) tune(channel);
   }).catch((err) => console.error('crt-tv: failed to load model', err));
 
   const dispose = () => {
@@ -423,7 +501,9 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
     document.documentElement.removeEventListener('pointerleave', onPointerLeave);
     window.removeEventListener('blur', onPointerLeave);
     document.removeEventListener('visibilitychange', onVisibilityChange);
-    canvas.removeEventListener('click', next);
+    canvas.removeEventListener('click', onClick);
+    canvas.removeEventListener('pointermove', onHover);
+    canvas.removeEventListener('pointerleave', onHoverEnd);
     container.removeEventListener('pointerdown', warmUpSound);
     container.removeEventListener('keydown', warmUpSound);
     for (const ch of videos) ch?.dispose();
@@ -441,5 +521,5 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
     renderer.dispose();
   };
 
-  return { next, dispose };
+  return { next, select, dispose };
 }
