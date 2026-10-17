@@ -14,31 +14,29 @@ export const stats = [
   { value: '9', label: 'years of web development in TypeScript / Angular' },
 ];
 
+/** The core of the stack: highlighted wherever they appear in the skills. */
+export const coreSkills = new Set(['C#', '.NET', 'Unity', 'TypeScript', 'JavaScript', 'Angular']);
+
 export const skills: { title: string; items: string[] }[] = [
   { title: 'Languages', items: ['C#', 'TypeScript', 'JavaScript', 'C++', 'SQL', 'HTML', 'CSS / SCSS'] },
   {
     title: 'Game development',
-    items: ['Unity', '.NET', 'ECS', 'Unity Physics', 'Multithreading', 'Editor tooling (IMGUI, Odin Inspector)', 'Node-based visual scripting', 'FMOD', 'Input systems'],
+    items: ['Unity', '.NET', 'ECS', 'Unity Physics', 'Multithreading', 'Editor tooling (IMGUI, Odin Inspector)', 'FMOD', 'Input systems'],
   },
   { title: 'Game UI', items: ['uGUI', 'NGUI', 'Doozy UI', 'MVVM / data binding'] },
   {
     title: 'Web',
     items: ['Angular', 'AngularJS', 'React', 'RxJS', 'NgRx', 'NGXS', 'Redux', 'Angular Material', 'Tailwind CSS', 'Bootstrap'],
   },
-  { title: 'Backend & data', items: ['Node.js', 'Express.js', 'REST APIs', 'WebSockets', 'GraphQL', 'PostgreSQL', 'Google Auth'] },
+  { title: 'Backend & data', items: ['Node.js', 'Express.js', 'REST APIs', 'WebSockets', 'GraphQL', 'PostgreSQL'] },
   {
     title: '3D & graphics',
     items: ['Three.js', 'WebGL', 'Blender', 'Autodesk Fusion', 'VFX and animation pipelines', 'Asset optimization'],
   },
-  {
-    title: 'Architecture',
-    items: ['OOP', 'SOLID', 'Design patterns', 'Modular architecture', 'State management', 'Profiling and optimization', 'Memory management'],
-  },
+  { title: 'Architecture', items: ['OOP', 'SOLID', 'Design patterns', 'Profiling and optimization'] },
   { title: 'Platforms', items: ['Android', 'iOS', 'Windows', 'macOS', 'Xbox'] },
-  {
-    title: 'Tools',
-    items: ['Git', 'SVN', 'GitHub', 'GitLab', 'Bitbucket', 'Jira', 'Docker', 'Jest', 'Playwright', 'Cypress', 'Claude Code', 'Codex', 'GitHub Copilot'],
-  },
+  { title: 'Tools', items: ['Git', 'SVN', 'GitHub', 'GitLab', 'Bitbucket', 'Jira', 'Docker', 'Jest', 'Playwright', 'Cypress'] },
+  { title: 'AI tools', items: ['Claude Code', 'Codex', 'GitHub Copilot', 'AI-driven SDLC'] },
 ];
 
 export interface Job {
@@ -60,7 +58,7 @@ export const experience: { track: string; jobs: Job[] }[] = [
         role: 'Unity Developer',
         company: 'HitZone',
         place: 'Kraków, Poland',
-        dates: 'Oct 2022 – Sep 2026',
+        dates: '2022 – 2026',
         project: 'Invokers: Titan Legacy — multi-platform online Action RPG, launched in July 2026 on iOS, Android and Desktop',
         points: [
           'Developed core gameplay and combat mechanics using the ECS architecture.',
@@ -78,7 +76,7 @@ export const experience: { track: string; jobs: Job[] }[] = [
         role: 'Unity Developer',
         company: 'Room 8 Studio',
         place: 'Kharkiv, Ukraine',
-        dates: 'Feb 2021 – Oct 2022',
+        dates: '2021 – 2022',
         points: [
           'NDA — restored an older project and delivered its Xbox port within ~6 months (the title also shipped on other console platforms and desktop).',
           'NDA — mobile English-learning game/app (iOS, Android); led a team of 4 developers.',
@@ -90,7 +88,7 @@ export const experience: { track: string; jobs: Job[] }[] = [
         role: 'Unity Developer / Frontend Developer',
         company: 'Plarium',
         place: 'Kharkiv region, Ukraine',
-        dates: 'Apr 2014 – Jan 2021',
+        dates: '2014 – 2021',
         project: 'Android/iOS: Raid: Shadow Legends (100M+ downloads), Stormfall: Rise of Balur (20M+ downloads), Soldiers Inc: Mobile Warfare (10M+ downloads), Nords: Heroes of the North',
         points: [
           'Developed mobile clients for hardcore MMO RTS and Turn-Based RPG games using an in-house MVVM architecture and various UI approaches (NGUI, Unity UI).',
@@ -107,7 +105,7 @@ export const experience: { track: string; jobs: Job[] }[] = [
         role: 'Frontend Developer (Angular)',
         company: 'via Upwork',
         place: 'Remote',
-        dates: 'Oct 2021 – Jan 2026',
+        dates: '2021 – 2026',
         points: [
           'Built a supply chain management tool for a goods manufacturer to coordinate products with contractors.',
           'Optimized the application using modern framework approaches.',
@@ -119,7 +117,7 @@ export const experience: { track: string; jobs: Job[] }[] = [
         role: 'Frontend Angular Developer',
         company: 'Eagle6',
         place: 'Remote (via Upwork)',
-        dates: 'Jan 2019 – Oct 2021',
+        dates: '2019 – 2021',
         points: [
           'Developed a project management system for a U.S. defense-sector company, combining issue tracking, a wiki/knowledge base, internal messaging and a company structure tree (similar to Jira + Confluence + a messenger).',
         ],
@@ -128,14 +126,14 @@ export const experience: { track: string; jobs: Job[] }[] = [
         role: 'Frontend Developer (Angular)',
         company: 'Juravli',
         place: 'Remote',
-        dates: 'May 2022 – Aug 2022',
+        dates: '2022',
         points: ['Volunteer project — built a service for finding volunteers to help people affected by the war.'],
       },
       {
         role: 'Fullstack Developer (Angular / Node.js)',
         company: 'Plarium',
         place: 'Kharkiv region, Ukraine',
-        dates: 'Jun 2018 – Nov 2018',
+        dates: '2018',
         points: [
           'Architected and built an image cataloging solution enabling seamless asset sharing between designers and programmers (Angular, Node.js, Google Auth).',
         ],

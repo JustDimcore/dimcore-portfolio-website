@@ -4,6 +4,7 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { createCrtScreen, type CrtScreen } from './crt-screen';
 import { loadClickSound } from './knob-click';
 import { createChannelVideo, type ChannelVideo } from './channel-video';
+import { createScreenGlow } from './screen-glow';
 
 // Direction of the Ref_half camera in 3d/CRT_TV.blend (the 3/4 reference photo),
 // converted from Blender Z-up to glTF Y-up, then swung towards the TV's front by FRONT_TURN.
@@ -16,6 +17,8 @@ const FILL = 0.86;                               // share of the frame the silho
 const MAX_YAW = THREE.MathUtils.degToRad(10);    // camera swing as the TV "looks" at the cursor, left-right
 const MAX_PITCH = THREE.MathUtils.degToRad(5);   // and up-down
 const DAMPING = 4;                               // how fast the view follows the cursor, 1/s
+const TILT_RANGE = 15;                           // degrees of phone tilt for the full swing
+const TILT_DRIFT = 0.01;                         // how fast the neutral tilt follows the hand, per event
 
 const SWITCH_SNOW = 400;                         // ms of snow between channels, at least
 const KNOB_DETENT = THREE.MathUtils.degToRad(30); // channel knob: 12 positions, one per click
@@ -95,6 +98,7 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
   // the next channel loads its first chunks as soon as the current one plays.
   // With reduced motion nothing plays until a click.
   let screen: CrtScreen | null = null;
+  const glow = createScreenGlow(container);
   const videos: ChannelVideo[] = [];
   let channel = 0;
   let tuning = 0;                      // bumps on every switch, so late events of old ones are ignored
@@ -137,6 +141,7 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
     waitingForClick = false;
     onChannel?.(index);
     screen?.setSignal(false);
+    screen?.showChannel(index + 1);
     container.dataset.signal = 'off';
 
     const ch = videoFor(index);
@@ -273,6 +278,7 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
       knob.rotation.z = knobFrom + (knobTo - knobFrom) * snap(knobT);
       dirty = true;
     }
+    glow.update(dt, videos[channel]?.video ?? null, container.dataset.signal === 'on');
     // The screen is alive every frame; with reduced motion it stays still until the video plays.
     if (screen && (!reducedMotion || videos[channel]?.video.paused === false)) {
       screen.update(dt);
@@ -307,7 +313,33 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
     pointer.set(0, 0);
   }
 
-  if (!reducedMotion) {
+  // Phones and tablets have no cursor: tilting the device turns the view instead.
+  // The way the phone is held is the neutral position; it drifts after the hand, so only
+  // a change of tilt counts. Axes follow the screen orientation.
+  let tiltBase: { beta: number; gamma: number } | null = null;
+  function onOrientation(e: DeviceOrientationEvent) {
+    if (e.beta == null || e.gamma == null) return;
+    tiltBase ??= { beta: e.beta, gamma: e.gamma };
+    tiltBase.beta += (e.beta - tiltBase.beta) * TILT_DRIFT;
+    tiltBase.gamma += (e.gamma - tiltBase.gamma) * TILT_DRIFT;
+    const db = e.beta - tiltBase.beta, dg = e.gamma - tiltBase.gamma;
+    const angle = window.screen.orientation?.angle ?? 0;
+    const [x, y] = angle === 90 ? [db, -dg] : angle === 270 ? [-db, dg] : angle === 180 ? [-dg, -db] : [dg, db];
+    pointer.set(THREE.MathUtils.clamp(x / TILT_RANGE, -1, 1), THREE.MathUtils.clamp(-y / TILT_RANGE, -1, 1));
+  }
+  const listenTilt = () => window.addEventListener('deviceorientation', onOrientation);
+  // iOS gives the sensor only after asking, and asking needs a tap
+  function askTilt() {
+    const ask = (DeviceOrientationEvent as unknown as { requestPermission?: () => Promise<string> }).requestPermission;
+    ask?.().then((state) => state === 'granted' && listenTilt()).catch(() => { /* declined: the TV just stays still */ });
+  }
+
+  const touchOnly = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+  if (!reducedMotion && touchOnly && 'DeviceOrientationEvent' in window) {
+    const needsPermission = typeof (DeviceOrientationEvent as unknown as { requestPermission?: unknown }).requestPermission === 'function';
+    if (needsPermission) window.addEventListener('click', askTilt, { once: true });
+    else listenTilt();
+  } else if (!reducedMotion) {
     window.addEventListener('pointermove', onPointerMove, { passive: true });
     document.documentElement.addEventListener('pointerleave', onPointerLeave);
     window.addEventListener('blur', onPointerLeave);
@@ -365,7 +397,12 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
         silhouette.push(new THREE.Vector3().fromBufferAttribute(pos, i).applyMatrix4(mesh.matrixWorld));
     });
 
-    if (glass) screen = createCrtScreen(glass);
+    if (glass) {
+      screen = createCrtScreen(glass);
+      // the tube lights up once the TV has faded in (TvScene fades the canvas over 0.35 s)
+      if (reducedMotion) screen.powerOn(true);
+      else setTimeout(() => screen?.powerOn(), 300);
+    }
     else console.warn('crt-tv: no screen glass in the model, run `npm run model`');
 
     resize();
@@ -381,6 +418,8 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
     resizeObserver.disconnect();
     visibility.disconnect();
     window.removeEventListener('pointermove', onPointerMove);
+    window.removeEventListener('deviceorientation', onOrientation);
+    window.removeEventListener('click', askTilt);
     document.documentElement.removeEventListener('pointerleave', onPointerLeave);
     window.removeEventListener('blur', onPointerLeave);
     document.removeEventListener('visibilitychange', onVisibilityChange);

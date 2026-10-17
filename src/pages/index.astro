@@ -2,7 +2,7 @@
 import Base from '../layouts/Base.astro';
 import TvScene from '../components/TvScene.astro';
 import { channels } from '../data/channels';
-import { links, stats, skills, experience, education, languages, contacts } from '../data/profile';
+import { links, stats, coreSkills, skills, experience, education, languages, contacts } from '../data/profile';
 ---
 
 <Base title="Dmytro Ilchenko — Software Engineer">
@@ -13,7 +13,7 @@ import { links, stats, skills, experience, education, languages, contacts } from
         <span aria-hidden="true"><span class="prompt">~$ </span>dmytro<span class="sep">_</span>ilchenko<span class="cursor"></span></span>
       </a>
       <nav class="bar-nav mono" aria-label="Sections">
-        <a href="#about"><i>01</i>About me</a>
+        <a class="current" href="#about" aria-current="location"><i>01</i>About me</a>
         <a href={links.projects}><i>02</i>Projects</a>
         <a href={links.linkedin} target="_blank" rel="noopener"><i>03</i>LinkedIn<span class="ext"> ↗</span></a>
         <a href={links.github} target="_blank" rel="noopener"><i>04</i>GitHub<span class="ext"> ↗</span></a>
@@ -33,7 +33,7 @@ import { links, stats, skills, experience, education, languages, contacts } from
         </p>
         <nav aria-label="Main">
           {/* "Play something →" comes back once there are games to play here */}
-          <a class="current" href="#about"><i>01</i>About me</a>
+          <a href="#about"><i>01</i>About me</a>
           <a href={links.projects}><i>02</i>Projects</a>
           <a href={links.linkedin} target="_blank" rel="noopener"><i>03</i>LinkedIn ↗</a>
           <a href={links.github} target="_blank" rel="noopener"><i>04</i>GitHub ↗</a>
@@ -68,7 +68,7 @@ import { links, stats, skills, experience, education, languages, contacts } from
           <div>
             <h3 class="group mono">{group.title}</h3>
             <ul class="tags">
-              {group.items.map((item) => <li>{item}</li>)}
+              {group.items.map((item) => <li class:list={[{ core: coreSkills.has(item) }]}>{item}</li>)}
             </ul>
           </div>
         ))}
@@ -102,7 +102,7 @@ import { links, stats, skills, experience, education, languages, contacts } from
     </section>
 
     <section class="section" aria-labelledby="background-title">
-      <h2 id="background-title" class="label mono">Education &amp; languages</h2>
+      <h2 id="background-title" class="label mono">Education</h2>
       <div class="background">
         <div>
           <h3 class="group mono">Education</h3>
@@ -129,12 +129,19 @@ import { links, stats, skills, experience, education, languages, contacts } from
             <dt class="mono">{c.label}</dt>
             <dd>
               <a href={c.href} {...(c.href.startsWith('http') ? { target: '_blank', rel: 'noopener' } : {})}>{c.text}</a>
+              {c.href.startsWith('mailto:') && (
+                <button type="button" class="copy mono" data-copy={c.text} aria-label={`Copy ${c.text}`}>copy</button>
+              )}
             </dd>
           </div>
         ))}
       </dl>
     </section>
   </main>
+
+  <footer class="wrap">
+    <p class="footer mono">© {new Date().getFullYear()} Dmytro Ilchenko · built with Astro &amp; Three.js</p>
+  </footer>
 </Base>
 
 <script>
@@ -147,6 +154,19 @@ import { links, stats, skills, experience, education, languages, contacts } from
       bar.classList.toggle('is-shown', show);
       bar.toggleAttribute('inert', !show);
     }).observe(menu);
+  }
+
+  // Copy the email to the clipboard; the button says so for a moment.
+  for (const button of document.querySelectorAll<HTMLButtonElement>('[data-copy]')) {
+    button.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(button.dataset.copy!);
+        button.textContent = 'copied';
+      } catch {
+        button.textContent = 'select it ↖';
+      }
+      setTimeout(() => (button.textContent = 'copy'), 1500);
+    });
   }
 </script>
 
@@ -171,7 +191,7 @@ import { links, stats, skills, experience, education, languages, contacts } from
   .bar-nav { display: flex; gap: 28px; font-size: 14px; white-space: nowrap; }
   .bar-nav a { display: flex; align-items: baseline; gap: 8px; text-decoration: none; transition: color 0.2s; }
   .bar-nav i { font-style: normal; font-size: 0.8em; color: var(--faint); transition: color 0.2s; }
-  .bar-nav a:hover, .bar-name:hover { color: var(--accent); }
+  .bar-nav a:hover, .bar-nav a.current, .bar-name:hover { color: var(--accent); }
   .bar-nav a:hover i { color: var(--muted); }
   /* anchors land below the bar */
   .section { scroll-margin-top: 60px; }
@@ -264,6 +284,7 @@ import { links, stats, skills, experience, education, languages, contacts } from
     font-size: 18px;
     font-weight: 400;
     text-transform: lowercase;
+    white-space: nowrap;   /* a comment is one line */
     color: var(--accent);
   }
   .label::before { content: "// "; }
@@ -314,8 +335,10 @@ import { links, stats, skills, experience, education, languages, contacts } from
     border-radius: 6px;
     font-family: var(--font-mono);
     font-size: 13px;
-    color: var(--fg);
+    color: var(--muted);
   }
+  /* the core of the stack */
+  .tags li.core { color: var(--fg); border-color: rgb(232 169 75 / 0.55); }
 
   /* experience */
   .tracks { display: grid; gap: 48px; max-width: 900px; }
@@ -348,6 +371,21 @@ import { links, stats, skills, experience, education, languages, contacts } from
   .contacts dd { margin: 0; font-size: clamp(18px, 2.2vw, 27px); letter-spacing: -0.01em; overflow-wrap: anywhere; }
   .contacts a { text-decoration: none; border-bottom: 1px solid var(--faint); transition: color 0.2s, border-color 0.2s; }
   .contacts a:hover { color: var(--accent); border-color: var(--accent); }
+  .contacts .copy {
+    margin-left: 14px;
+    padding: 3px 10px;
+    border: 1px solid var(--faint);
+    border-radius: 999px;
+    background: none;
+    font-size: 12px;
+    color: var(--muted);
+    vertical-align: middle;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .contacts .copy:hover { color: var(--accent); border-color: var(--accent); }
+
+  .footer { margin: 0; padding-top: 24px; padding-bottom: 40px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); }
 
   @media (max-width: 1024px) {
     .hero { grid-template-columns: minmax(0, 1fr); padding-top: 40px; }

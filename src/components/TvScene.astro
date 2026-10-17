@@ -63,7 +63,13 @@ const total = String(channels.length).padStart(2, '0');
     content: "";
     position: absolute;
     left: 8%; right: 0; top: 6%; bottom: 0;
-    background: radial-gradient(closest-side at 50% 55%, rgba(232, 169, 75, 0.16), rgba(232, 169, 75, 0.05) 55%, transparent 100%);
+    /* colour and strength follow the picture (screen-glow.ts); amber until there is one */
+    background: radial-gradient(
+      closest-side at 50% 55%,
+      rgb(var(--tv-glow, 232 169 75) / calc(0.26 * var(--tv-glow-strength, 1))),
+      rgb(var(--tv-glow, 232 169 75) / calc(0.09 * var(--tv-glow-strength, 1))) 55%,
+      transparent 100%
+    );
     filter: blur(8px);
     pointer-events: none;
   }
@@ -74,7 +80,7 @@ const total = String(channels.length).padStart(2, '0');
     width: 100%;
     height: 100%;
     opacity: 0;
-    transition: opacity 0.8s ease;
+    transition: opacity 0.35s ease;
   }
   .is-ready canvas { opacity: 1; }
   .switchable canvas { cursor: pointer; }

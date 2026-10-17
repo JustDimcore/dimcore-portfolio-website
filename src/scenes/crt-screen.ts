@@ -9,6 +9,9 @@ uniform float uSignal;       // 0 = snow, 1 = picture
 uniform float uGlitch;       // burst of tearing when the channel switches
 uniform float uVideoAspect;
 uniform float uScreenAspect;
+uniform sampler2D uOsd;      // channel number drawn on a canvas
+uniform float uOsdAlpha;
+uniform float uPower;        // 0 = off, 1 = on; in between the tube is warming up
 varying vec2 vScreenUv;
 
 float crtHash(vec2 p) {
@@ -56,6 +59,13 @@ vec3 crtPicture(vec2 uv) {
   float snow = crtHash(floor(p * vec2(360.0, LINES)) + fract(t * 7.13) * 431.0);
   col = mix(vec3(snow * 0.8), col, uSignal * (1.0 - uGlitch * 0.6));
 
+  // on-screen channel number in the top left corner, green like old TVs
+  vec2 o = (p - vec2(0.07, 0.75)) / vec2(0.32, 0.16);
+  if (o.x > 0.0 && o.x < 1.0 && o.y > 0.0 && o.y < 1.0) {
+    float osd = texture2D(uOsd, o).a * uOsdAlpha;
+    col = mix(col, vec3(0.35, 1.0, 0.45) * 1.3, osd);
+  }
+
   // grain, scanlines (faded out when they get finer than a pixel), hum bar, flicker
   col += (crtHash(p * 731.0 + fract(t) * 97.0) - 0.5) * 0.06;
   float scanFade = 1.0 - smoothstep(0.3, 0.6, fwidth(p.y * LINES * 0.5));
@@ -66,9 +76,22 @@ vec3 crtPicture(vec2 uv) {
   // vignette toward the dark edge of the tube
   float vignette = smoothstep(0.75, 0.3, length(c * vec2(1.0, 1.15)));
   float inside = step(abs(p.x - 0.5), 0.5) * step(abs(p.y - 0.5), 0.5);
+
+  // switching on: a bright line spreads sideways, then opens up into the picture
+  float spread = smoothstep(0.0, 0.35, uPower);
+  float open = mix(0.004, 1.2, smoothstep(0.3, 1.0, uPower));
+  float tube = step(abs(c.x), 0.5 * spread) * smoothstep(open, open * 0.5, abs(c.y));
+  float flash = 1.0 - smoothstep(0.3, 0.9, uPower);
+  col = mix(col, vec3(1.0), flash * 0.85) * (1.0 + 2.5 * flash);
+  col *= mix(tube, 1.0, step(0.999, uPower));
+
   return max(col, 0.0) * vignette * inside * 0.95;
 }
 `;
+
+const POWER_ON = 0.45;   // s for the tube to light up
+const OSD_TIME = 1.5;    // s the channel number stays, fade included
+const OSD_FADE = 0.2;    // s of it fading out
 
 const BLACK = new THREE.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1);
 BLACK.needsUpdate = true;
@@ -80,6 +103,10 @@ export interface CrtScreen {
   setSignal(on: boolean): void;
   /** Puts this video on the picture (shown once the signal is on). */
   setVideo(video: HTMLVideoElement): void;
+  /** Switches the tube on: a line that opens into the picture, or at once. */
+  powerOn(instant?: boolean): void;
+  /** Shows the channel number in the corner of the screen for a moment. */
+  showChannel(number: number): void;
   dispose(): void;
 }
 
@@ -95,6 +122,13 @@ export function createCrtScreen(mesh: THREE.Mesh): CrtScreen {
   const size = new THREE.Box3().setFromObject(mesh).getSize(new THREE.Vector3());
   const textures = new Map<HTMLVideoElement, THREE.VideoTexture>();
 
+  // the channel number is drawn here and laid over the picture by the shader
+  const osdCanvas = document.createElement('canvas');
+  osdCanvas.width = 256;
+  osdCanvas.height = 128;
+  const osdCtx = osdCanvas.getContext('2d')!;
+  const osd = new THREE.CanvasTexture(osdCanvas);
+
   const uniforms = {
     uVideo: { value: BLACK as THREE.Texture },
     uTime: { value: 0 },
@@ -102,6 +136,9 @@ export function createCrtScreen(mesh: THREE.Mesh): CrtScreen {
     uGlitch: { value: 0 },
     uVideoAspect: { value: 4 / 3 },
     uScreenAspect: { value: size.x / size.y },
+    uOsd: { value: osd },
+    uOsdAlpha: { value: 0 },
+    uPower: { value: 0 },
   };
 
   const original = mesh.material as THREE.MeshStandardMaterial;
@@ -123,12 +160,30 @@ export function createCrtScreen(mesh: THREE.Mesh): CrtScreen {
   mesh.material = material;
 
   let signalTarget = 0;
+  let powering = false;
+  let osdLeft = 0;   // s the channel number stays on screen
 
   return {
     update(dt) {
       uniforms.uTime.value = (uniforms.uTime.value + dt) % 1000;
       uniforms.uGlitch.value *= Math.exp(-dt * 4);
       uniforms.uSignal.value += (signalTarget - uniforms.uSignal.value) * (1 - Math.exp(-dt * 12));
+      if (powering) uniforms.uPower.value = Math.min(1, uniforms.uPower.value + dt / POWER_ON);
+      osdLeft = Math.max(0, osdLeft - dt);
+      uniforms.uOsdAlpha.value = Math.min(1, osdLeft / OSD_FADE);
+    },
+    powerOn(instant = false) {
+      powering = true;
+      if (instant) uniforms.uPower.value = 1;
+    },
+    showChannel(number) {
+      osdCtx.clearRect(0, 0, osdCanvas.width, osdCanvas.height);
+      osdCtx.font = '700 84px "JetBrains Mono Variable", ui-monospace, monospace';
+      osdCtx.textBaseline = 'middle';
+      osdCtx.fillStyle = '#fff';
+      osdCtx.fillText(`CH ${String(number).padStart(2, '0')}`, 4, osdCanvas.height / 2);
+      osd.needsUpdate = true;
+      osdLeft = OSD_TIME;
     },
     setSignal(on) {
       const target = on ? 1 : 0;
@@ -148,6 +203,7 @@ export function createCrtScreen(mesh: THREE.Mesh): CrtScreen {
     },
     dispose() {
       for (const texture of textures.values()) texture.dispose();
+      osd.dispose();
       material.dispose();
     },
   };
