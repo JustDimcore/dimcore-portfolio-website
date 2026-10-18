@@ -1,7 +1,7 @@
 ---
 // The bar at the top: the name, the menu and the theme switch, the same on every page.
 // On the home page it slides in once the menu under the name is scrolled away (index.astro
-// toggles "is-shown"); on other pages it's simply there.
+// toggles "is-shown"); on other pages it stays pinned to the top.
 import ThemeToggle from './ThemeToggle.astro';
 import { links } from '../data/profile';
 
@@ -32,7 +32,8 @@ const { home = false, current } = Astro.props;
 
 <style>
   .bar {
-    position: relative;
+    position: sticky;
+    top: 0;
     z-index: 20;
     background: color-mix(in srgb, var(--bg) 84%, transparent);
     backdrop-filter: blur(10px);
@@ -50,7 +51,7 @@ const { home = false, current } = Astro.props;
   .floating.is-shown { transform: none; visibility: visible; transition: transform 0.3s ease; }
   @media (prefers-reduced-motion: reduce) { .floating, .floating.is-shown { transition: none; } }
 
-  .bar-inner { display: flex; align-items: center; gap: 24px; height: 60px; }
+  .bar-inner { display: flex; align-items: center; gap: 24px; height: var(--bar-height); }
   .bar-name { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; text-decoration: none; white-space: nowrap; }
   .prompt, .sep { font-weight: 400; color: var(--muted); }
   .cursor { display: inline-block; width: 0.55em; height: 0.95em; margin-left: 0.08em; vertical-align: -0.12em; background: var(--accent); }
@@ -68,7 +69,7 @@ const { home = false, current } = Astro.props;
     .bar-nav { gap: 18px; }
   }
   @media (max-width: 640px) {
-    .bar-inner { height: 52px; gap: 12px; }
+    .bar-inner { gap: 12px; }
     .bar-name { font-size: 14px; }
     .bar-name .prompt, .bar-name .cursor { display: none; }
     .bar-nav { gap: 12px; font-size: 12px; }
