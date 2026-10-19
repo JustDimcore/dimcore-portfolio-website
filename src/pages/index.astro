@@ -1,7 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import TvScene from '../components/TvScene.astro';
-import ThemeToggle from '../components/ThemeToggle.astro';
+import QuickContacts from '../components/QuickContacts.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import SiteHeader from '../components/SiteHeader.astro';
 import { channels } from '../data/channels';
@@ -15,7 +15,6 @@ import { links, coreSkills, skills, experience, education, languages, contacts }
   <main class="wrap" id="top">
     <section class="hero">
       <div class="intro">
-        <div class="intro-theme"><ThemeToggle /></div>
         <h1 aria-label="Dmytro Ilchenko">
           <span aria-hidden="true"><span class="prompt">~$ </span>dmytro<span class="sep">_</span>ilchenko<span class="cursor"></span></span>
         </h1>
@@ -23,6 +22,8 @@ import { links, coreSkills, skills, experience, education, languages, contacts }
           Software Engineer
           <small>Gamedev &amp; Web</small>
         </p>
+        <!-- top right, level with the name; under the role on narrow screens -->
+        <div class="quick-wrap"><QuickContacts /></div>
         <nav aria-label="Main">
           {/* "Play something →" comes back once there are games to play here */}
           <a href="#about"><i>01</i>About me</a>
@@ -201,8 +202,8 @@ import { links, coreSkills, skills, experience, education, languages, contacts }
   }
   @keyframes blink { 50% { opacity: 0; } }
 
-  .intro { position: relative; }
-  .intro-theme { position: absolute; top: 2px; right: 0; }
+  .hero { position: relative; }
+  .quick-wrap { position: absolute; top: 56px; right: 0; z-index: 2; }
 
   .role { margin: 22px 0 0; font-size: 19px; line-height: 1.4; }
   .role small { display: block; margin-top: 4px; font-size: 16px; color: var(--muted); }
@@ -227,7 +228,7 @@ import { links, coreSkills, skills, experience, education, languages, contacts }
   .stage {
     position: relative;
     height: 600px;
-    margin-top: -56px;   /* the TV sits higher, level with the top of the page */
+    margin-top: -36px;   /* the TV sits high, its antennas just under the contacts */
     margin-right: -56px;
     --tv-caption-right: 64px;
     --tv-caption-bottom: 26px;
@@ -319,6 +320,7 @@ import { links, coreSkills, skills, experience, education, languages, contacts }
 
   @media (max-width: 1024px) {
     .hero { grid-template-columns: minmax(0, 1fr); padding-top: 40px; }
+    .quick-wrap { position: static; margin-top: 20px; }
     .stage {
       height: clamp(320px, 62vw, 560px);
       margin: 8px calc(-1 * var(--gutter)) 0;

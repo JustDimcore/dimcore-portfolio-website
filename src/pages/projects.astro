@@ -16,7 +16,7 @@ import { projectChannels } from '../data/channels';
   <main class="wrap page">
     <div class="list">
       <h1>Projects</h1>
-      <p class="intro">Games I've worked on, newest first. Scroll and the TV tunes in to each one, except the two under NDA.</p>
+      <p class="intro">Games I've worked on, newest first.<span class="tunes"> Scroll and the TV tunes in to each one, except the two under NDA.</span></p>
 
       {projects.map((p, i) => (
         <article class:list={['project', { nda: p.nda, 'is-on': i === 0 }]} data-project={i} aria-labelledby={`project-${i}`}>
@@ -49,7 +49,7 @@ import { projectChannels } from '../data/channels';
 
     <!-- stays in view and plays the project being read -->
     <aside class="screen">
-      <div class="sticky"><TvScene channels={projectChannels} emptyLabel="UNDER NDA" clickOpensLink /></div>
+      <div class="sticky"><TvScene channels={projectChannels} emptyLabel="UNDER NDA" clickOpensLink="(min-width: 1025px)" /></div>
     </aside>
   </main>
 
@@ -58,18 +58,16 @@ import { projectChannels } from '../data/channels';
 
 <script>
   // The project being read is the last one whose top has passed a line a bit above the middle
-  // of what's visible (below the bar, and the pinned TV on narrow screens). The highlight moves right away;
+  // of what's visible below the bar. The highlight moves right away;
   // the TV tunes in once the scrolling settles, so a quick scroll doesn't flick through every
   // channel on the way. "next" on the TV moves the highlight too.
   const tv = document.querySelector<HTMLElement>('[data-tv-scene]');
-  const screen = document.querySelector<HTMLElement>('.screen');
   const bar = document.querySelector<HTMLElement>('header.bar');
   const items = [...document.querySelectorAll<HTMLElement>('[data-project]')];
-  const narrow = matchMedia('(max-width: 1024px)');
   const SETTLE = 120;   // ms of no change before the TV switches
 
   function reading() {
-    const top = narrow.matches && screen ? screen.getBoundingClientRect().bottom : bar?.getBoundingClientRect().bottom ?? 0;
+    const top = bar?.getBoundingClientRect().bottom ?? 0;
     const line = top + (innerHeight - top) * 0.4;
     // at the very bottom the last project may never reach the line: it's the one being read then
     if (innerHeight + scrollY >= document.documentElement.scrollHeight - 2) return items.length - 1;
@@ -83,7 +81,7 @@ import { projectChannels } from '../data/channels';
   const footer = document.querySelector<HTMLElement>('footer');
   function makeRoom() {
     if (!list || !items.length) return;
-    const top = (bar?.offsetHeight ?? 0) + (narrow.matches && screen ? screen.offsetHeight : 0);
+    const top = bar?.offsetHeight ?? 0;
     const below = (innerHeight - top) * 0.6;
     const last = items[items.length - 1].offsetHeight + (footer?.offsetHeight ?? 0);
     list.style.paddingBottom = `${Math.max(48, Math.ceil(below - last))}px`;
@@ -103,7 +101,7 @@ import { projectChannels } from '../data/channels';
       wanted = index;
       highlight(index);
       clearTimeout(timer);
-      timer = window.setTimeout(() => tv?.dispatchEvent(new CustomEvent('tv:select', { detail: wanted })), SETTLE);
+      if (wide.matches) timer = window.setTimeout(tune, SETTLE);
     });
   }
   window.addEventListener('scroll', onScroll, { passive: true });
@@ -111,12 +109,17 @@ import { projectChannels } from '../data/channels';
   function highlight(on: number) {
     items.forEach((el, i) => el.classList.toggle('is-on', i === on));
   }
-  tv?.addEventListener('tv:channel', (e) => highlight((e as CustomEvent<number>).detail));
+  // On narrow screens the TV scrolls away above the list: scrolling doesn't tune it, and its
+  // own channel switches (clicks, "next") don't move the highlight.
+  const wide = matchMedia('(min-width: 1025px)');
+  const tune = () => tv?.dispatchEvent(new CustomEvent('tv:select', { detail: wanted }));
+  wide.addEventListener('change', () => { if (wide.matches) tune(); });
+  tv?.addEventListener('tv:channel', (e) => { if (wide.matches) highlight((e as CustomEvent<number>).detail); });
 
   // opened halfway down (reload, back): start from the project in view
   wanted = reading();
   highlight(wanted);
-  if (wanted) tv?.dispatchEvent(new CustomEvent('tv:select', { detail: wanted }));
+  if (wanted && wide.matches) tune();
 </script>
 
 <style>
@@ -178,10 +181,13 @@ import { projectChannels } from '../data/channels';
   .links a { color: var(--accent); text-decoration: none; }
   .links a:hover { text-decoration: underline; text-underline-offset: 0.18em; }
 
-  /* narrower screens: a smaller TV pinned to the top, the projects scroll under it */
+  /* narrower screens: a smaller TV above the list, scrolling away with the page */
   @media (max-width: 1024px) {
     .page { grid-template-columns: minmax(0, 1fr); gap: 0; }
-    .screen { order: -1; position: sticky; top: var(--bar-height); z-index: 2; margin: 0 calc(-1 * var(--gutter)); background: var(--bg); border-bottom: 1px solid var(--line); }
+    .screen { order: -1; margin: 0 calc(-1 * var(--gutter)); }
+    /* the TV has scrolled away: no project is marked as the one on it */
+    .is-on .on-air, .project::before, .intro .tunes { display: none; }
+    .project:not(.is-on) { opacity: 1; }
     .sticky { position: static; height: 40vh; --tv-caption-right: var(--gutter); --tv-caption-bottom: 8px; }
     h1 { margin-top: 32px; font-size: 36px; }
   }

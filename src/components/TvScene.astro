@@ -12,8 +12,9 @@ interface Props {
   knobSound?: string;
   /** Caption for a channel without a video. */
   emptyLabel?: string;
-  /** A click on the TV opens the channel's link (with a hint by the cursor) instead of switching. */
-  clickOpensLink?: boolean;
+  /** A click on the TV opens the channel's link (with a hint by the cursor) instead of switching.
+   *  A media query limits it to the screens it matches; elsewhere a click switches as usual. */
+  clickOpensLink?: boolean | string;
 }
 
 const {
@@ -35,7 +36,7 @@ const total = String(channels.length).padStart(2, '0');
   data-mobile-model={mobileModelUrl}
   data-channels={JSON.stringify(channels)}
   data-knob-sound={knobSound}
-  data-click-link={clickOpensLink ? '' : undefined}
+  data-click-link={clickOpensLink === true ? 'all' : clickOpensLink || undefined}
 >
   <canvas
     aria-label={!first ? 'Old CRT TV showing static'
@@ -96,7 +97,7 @@ const total = String(channels.length).padStart(2, '0');
   /* only the TV itself is clickable (crt-tv.ts sets "over-tv" while the cursor is on it) */
   .switchable.over-tv canvas { cursor: pointer; }
   /* when a click opens the link, a channel without one isn't clickable */
-  .tv-scene[data-click-link]:not(.has-link) canvas { cursor: default; }
+  .tv-scene.opens-link:not(.has-link) canvas { cursor: default; }
 
   /* "Watch on YouTube" by the cursor (positioned by the script) */
   .hint {
@@ -117,7 +118,7 @@ const total = String(channels.length).padStart(2, '0');
     opacity: 0;
     transition: opacity 0.15s;
   }
-  .tv-scene.has-link.over-tv .hint { opacity: 1; }
+  .tv-scene.opens-link.has-link.over-tv .hint { opacity: 1; }
 
   /* the channel's name large, like an on-screen label of an old TV; the rest small under it */
   .caption {
@@ -172,8 +173,13 @@ const total = String(channels.length).padStart(2, '0');
     const link = el.querySelector<HTMLAnchorElement>('[data-channel-link]');
     const canvas = el.querySelector('canvas')!;
     const hint = el.querySelector<HTMLElement>('.hint');
-    const clickOpensLink = 'clickLink' in el.dataset;
+    // where a click opens the link ("opens-link" on the container while it does)
+    const opensLink = el.dataset.clickLink ? matchMedia(el.dataset.clickLink) : null;
+    const syncOpensLink = () => el.classList.toggle('opens-link', !!opensLink?.matches);
+    syncOpensLink();
+    opensLink?.addEventListener('change', syncOpensLink);
     let current = channels[0];
+    const openLink = () => { if (current?.link) window.open(current.link, '_blank', 'noopener'); };
 
     // the hint follows the cursor; it shows while the cursor is on the TV itself (CSS)
     if (hint) {
@@ -192,9 +198,8 @@ const total = String(channels.length).padStart(2, '0');
         modelUrl: (small && el.dataset.mobileModel) || el.dataset.model!,
         videos: channels.map((c) => c.video ?? ''),
         clickSound: el.dataset.knobSound,
-        onScreenClick: clickOpensLink
-          ? () => { if (current?.link) window.open(current.link, '_blank', 'noopener'); }
-          : undefined,
+        // where the link opens, a click opens it; elsewhere it switches as usual
+        onScreenClick: opensLink ? () => (opensLink.matches ? openLink() : tv.next()) : undefined,
         onChannel(index) {
           const channel = channels[index];
           current = channel;

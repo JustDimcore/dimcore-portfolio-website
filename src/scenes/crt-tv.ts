@@ -246,17 +246,9 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
     container.classList.remove('over-tv');
   }
 
-  // A click on the TV switches the channel, or does what the page asked for; either way it
-  // starts a picture that was waiting for one.
+  // A click on the TV switches to the next channel, or does what the page asked for instead.
   function onClick(e: MouseEvent) {
-    if (!overTv(e)) return;
-    if (!onScreenClick) return next();
-    if (waitingForClick && ready) {
-      waitingForClick = false;
-      wantsPlay = true;
-      playVideo();
-    }
-    onScreenClick();
+    if (overTv(e)) (onScreenClick ?? next)();
   }
   if (videoUrls.length) {
     canvas.addEventListener('click', onClick);
