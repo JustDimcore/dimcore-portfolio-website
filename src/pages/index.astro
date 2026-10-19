@@ -41,14 +41,14 @@ import { links, coreSkills, skills, experience, education, languages, contacts }
       <h2 id="about-title" class="label">About</h2>
       <!-- the years are part of the story, not a row of big numbers -->
       <p class="lead">
-        <span class="hi">Hi, I'm Dmytro, a software engineer.</span> I mostly work on game development and the web:{' '}
-        <b>15 years</b> in software, <b>12</b> of them making games in Unity and C#, and <b>9</b> on the web with TypeScript
-        and Angular. Since 2014 I've worked on 7 game projects and more than 10 websites, and taken part in 4 game jams.
-        Some of the games I've worked on are in <a href={links.projects}>Projects</a>.
+        <span class="hi">Hi, I'm Dmytro and I build and create things.</span> I'm a software engineer specializing
+        in game and web development with over 12 years of commercial <a href="#experience">experience</a>.
+        Since 2014, I have worked on diverse <a href={links.projects}>projects</a> across
+        various <a href="#skills">technologies</a>, focusing mostly on Unity/C# for games and Angular/TypeScript for web apps.
       </p>
     </section>
 
-    <section class="section" aria-labelledby="skills-title">
+    <section class="section" id="skills" aria-labelledby="skills-title">
       <h2 id="skills-title" class="label">Skills</h2>
       <!-- one line per area; the core of the stack stands out -->
       <div class="sheet">
@@ -72,7 +72,7 @@ import { links, coreSkills, skills, experience, education, languages, contacts }
       </div>
     </section>
 
-    <section class="section" aria-labelledby="experience-title">
+    <section class="section" id="experience" aria-labelledby="experience-title">
       <h2 id="experience-title" class="label">Experience</h2>
       <div class="tracks">
         {experience.map((track) => (
@@ -259,7 +259,7 @@ import { links, coreSkills, skills, experience, education, languages, contacts }
     letter-spacing: -0.01em;
     color: var(--muted);
   }
-  .lead .hi, .lead b { font-weight: 400; color: var(--fg); }
+  .lead .hi { color: var(--fg); }
   .lead a { color: var(--accent); text-underline-offset: 0.18em; text-decoration-thickness: 1px; }
   .lead a:hover { text-decoration-thickness: 2px; }
 
