@@ -2,3 +2,10 @@ node_modules/
 dist/
 .astro/
 *.blend1
+
+# Local sources and working files (not part of the site build)
+3d/
+videos/
+CVs/
+mockup/
+.claude/
