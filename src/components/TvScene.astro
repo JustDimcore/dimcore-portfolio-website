@@ -12,9 +12,11 @@ interface Props {
   knobSound?: string;
   /** Caption for a channel without a video. */
   emptyLabel?: string;
-  /** A click on the TV opens the channel's link (with a hint by the cursor) instead of switching.
-   *  A media query limits it to the screens it matches; elsewhere a click switches as usual. */
-  clickOpensLink?: boolean | string;
+  /** On screens matching this media query the page drives the TV (tv:select): a click opens
+   *  the channel's link (with a hint by the cursor) and there's no "next". Elsewhere the TV is
+   *  on its own, like on the home page: a click switches, and channels without a video are
+   *  left out. Which channels it has is decided once, when the page loads. */
+  pageDriven?: string;
 }
 
 const {
@@ -23,7 +25,7 @@ const {
   channels = [],
   knobSound = '/audio/tv_knob.mp3',
   emptyLabel = 'NO SIGNAL',
-  clickOpensLink = false,
+  pageDriven,
 } = Astro.props;
 const first = channels[0];
 const total = String(channels.length).padStart(2, '0');
@@ -36,22 +38,21 @@ const total = String(channels.length).padStart(2, '0');
   data-mobile-model={mobileModelUrl}
   data-channels={JSON.stringify(channels)}
   data-knob-sound={knobSound}
-  data-click-link={clickOpensLink === true ? 'all' : clickOpensLink || undefined}
+  data-page-driven={pageDriven}
 >
   <canvas
     aria-label={!first ? 'Old CRT TV showing static'
-      : clickOpensLink ? 'Old CRT TV playing videos of projects; click to watch the trailer on YouTube'
-      : 'Old CRT TV playing videos of projects; click to switch the channel'}
+      : 'Old CRT TV playing videos of projects; click to switch the channel or watch the trailer'}
     role="img"
   ></canvas>
-  {clickOpensLink && <span class="hint mono" aria-hidden="true">Watch on YouTube ↗</span>}
+  {pageDriven && <span class="hint mono" aria-hidden="true">Watch on YouTube ↗</span>}
   <div class="caption mono" aria-live="polite">
     {first ? (
       <>
         <div class="title"><b data-channel-title>{first.title}</b><b class="lost">NO SIGNAL</b><b class="empty">{emptyLabel}</b></div>
         <div class="meta">
-          CH <span data-channel-number>01</span>/{total}
-          {channels.length > 1 && <>{' · '}<button type="button" data-next>next ▸</button></>}
+          CH <span data-channel-number>01</span>/<span data-channel-total>{total}</span>
+          {channels.length > 1 && <span class="next-wrap">{' · '}<button type="button" data-next>next ▸</button></span>}
           <span data-channel-link-wrap hidden={!first.link}>
             {' · '}<a data-channel-link href={first.link} target="_blank" rel="noopener">YouTube ↗</a>
           </span>
@@ -97,7 +98,9 @@ const total = String(channels.length).padStart(2, '0');
   /* only the TV itself is clickable (crt-tv.ts sets "over-tv" while the cursor is on it) */
   .switchable.over-tv canvas { cursor: pointer; }
   /* when a click opens the link, a channel without one isn't clickable */
-  .tv-scene.opens-link:not(.has-link) canvas { cursor: default; }
+  .tv-scene.page-driven:not(.has-link) canvas { cursor: default; }
+  /* the page picks the channel: no "next" of its own */
+  .page-driven .next-wrap { display: none; }
 
   /* "Watch on YouTube" by the cursor (positioned by the script) */
   .hint {
@@ -118,7 +121,7 @@ const total = String(channels.length).padStart(2, '0');
     opacity: 0;
     transition: opacity 0.15s;
   }
-  .tv-scene.opens-link.has-link.over-tv .hint { opacity: 1; }
+  .tv-scene.page-driven.has-link.over-tv .hint { opacity: 1; }
 
   /* the channel's name large, like an on-screen label of an old TV; the rest small under it */
   .caption {
@@ -166,18 +169,25 @@ const total = String(channels.length).padStart(2, '0');
 
   // Three.js lands in its own chunk and loads only on pages that use this component.
   for (const el of document.querySelectorAll<HTMLElement>('[data-tv-scene]')) {
-    const channels: TvChannel[] = JSON.parse(el.dataset.channels ?? '[]');
+    const all: TvChannel[] = JSON.parse(el.dataset.channels ?? '[]');
     const number = el.querySelector('[data-channel-number]');
     const title = el.querySelector('[data-channel-title]');
     const linkWrap = el.querySelector<HTMLElement>('[data-channel-link-wrap]');
     const link = el.querySelector<HTMLAnchorElement>('[data-channel-link]');
     const canvas = el.querySelector('canvas')!;
     const hint = el.querySelector<HTMLElement>('.hint');
-    // where a click opens the link ("opens-link" on the container while it does)
-    const opensLink = el.dataset.clickLink ? matchMedia(el.dataset.clickLink) : null;
-    const syncOpensLink = () => el.classList.toggle('opens-link', !!opensLink?.matches);
-    syncOpensLink();
-    opensLink?.addEventListener('change', syncOpensLink);
+    // where the page drives the TV ("page-driven" on the container while it does)
+    const driven = el.dataset.pageDriven ? matchMedia(el.dataset.pageDriven) : null;
+    const syncDriven = () => el.classList.toggle('page-driven', !!driven?.matches);
+    syncDriven();
+    driven?.addEventListener('change', syncDriven);
+
+    // on its own the TV skips channels with nothing to show; `kept` maps its channels back to
+    // the page's indices, which tv:select and tv:channel speak
+    const kept = all.flatMap((c, i) => (driven && !driven.matches && !c.video ? [] : [i]));
+    const channels = kept.map((i) => all[i]);
+    const totalEl = el.querySelector('[data-channel-total]');
+    if (totalEl) totalEl.textContent = String(channels.length).padStart(2, '0');
     let current = channels[0];
     const openLink = () => { if (current?.link) window.open(current.link, '_blank', 'noopener'); };
 
@@ -198,8 +208,8 @@ const total = String(channels.length).padStart(2, '0');
         modelUrl: (small && el.dataset.mobileModel) || el.dataset.model!,
         videos: channels.map((c) => c.video ?? ''),
         clickSound: el.dataset.knobSound,
-        // where the link opens, a click opens it; elsewhere it switches as usual
-        onScreenClick: opensLink ? () => (opensLink.matches ? openLink() : tv.next()) : undefined,
+        // where the page drives, a click opens the link; elsewhere it switches as usual
+        onScreenClick: driven ? () => (driven.matches ? openLink() : tv.next()) : undefined,
         onChannel(index) {
           const channel = channels[index];
           current = channel;
@@ -211,12 +221,12 @@ const total = String(channels.length).padStart(2, '0');
             if (channel.link) link.href = channel.link;
           }
           // the page can follow what's on: el.addEventListener('tv:channel', (e) => e.detail)
-          el.dispatchEvent(new CustomEvent('tv:channel', { detail: index }));
+          el.dispatchEvent(new CustomEvent('tv:channel', { detail: kept[index] }));
         },
       });
       el.querySelector('[data-next]')?.addEventListener('click', () => tv.next());
       // the page can tune the TV: el.dispatchEvent(new CustomEvent('tv:select', { detail: index }))
-      el.addEventListener('tv:select', (e) => tv.select((e as CustomEvent<number>).detail));
+      el.addEventListener('tv:select', (e) => tv.select(kept.indexOf((e as CustomEvent<number>).detail)));
     });
   }
 </script>

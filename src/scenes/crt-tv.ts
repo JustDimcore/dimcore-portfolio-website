@@ -24,7 +24,8 @@ const TILT_DRIFT = 0.01;                         // how fast the neutral tilt fo
 const BODY_BOX = new THREE.Box3(new THREE.Vector3(-0.2, 0, -0.21), new THREE.Vector3(0.17, 0.3, 0.14));
 
 const SWITCH_SNOW = 400;                         // ms of snow between channels, at least
-const KNOB_DETENT = THREE.MathUtils.degToRad(30); // channel knob: 12 positions, one per click
+const KNOB_DETENT = THREE.MathUtils.degToRad(30); // channel knob: one position per channel, 30° apart
+const KNOB_UP = THREE.MathUtils.degToRad(-30);    // knob angle at which its grip stands upright: channel 1
 const KNOB_TURN = 0.18;                          // s for the knob to snap into the next position
 
 // Fast start and a small overshoot, like a knob dropping into its detent.
@@ -177,7 +178,8 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
     playVideo();
   }
 
-  // The channel knob turns clockwise by one detent on every switch, with a click.
+  // The channel knob points at the channel: one detent clockwise per channel from the first,
+  // and back round to the start when the list wraps. Every switch clicks.
   const click = clickSound && videoUrls.length ? loadClickSound(clickSound) : null;
   let knob: THREE.Object3D | null = null;
   let knobFrom = 0;
@@ -192,8 +194,9 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
       playVideo();
       return;
     }
-    turnKnob(1);
-    tune((channel + 1) % videoUrls.length);
+    const index = (channel + 1) % videoUrls.length;
+    turnKnob(index);
+    tune(index);
   }
 
   function select(index: number) {
@@ -205,14 +208,14 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
     }
     if (index === channel) return;
     wantsPlay = true;
-    turnKnob(index - channel);
+    turnKnob(index);
     tune(index);
   }
 
-  function turnKnob(detents: number) {
+  function turnKnob(index: number) {
     if (knob) {
       knobFrom = knob.rotation.z;
-      knobTo -= KNOB_DETENT * detents;
+      knobTo = KNOB_UP - KNOB_DETENT * index;
       knobT = 0;
     }
     click?.play();
@@ -449,6 +452,8 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
       model.add(knob);
       model.updateMatrixWorld(true);
       knob.attach(knobMesh);
+      // already on a later channel (the page picked one before the model was in)
+      knob.rotation.z = knobTo = KNOB_UP - KNOB_DETENT * channel;
     } else {
       console.warn('crt-tv: no channel knob pivot in the model, run `npm run model`');
     }
