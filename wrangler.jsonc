@@ -1,0 +1,9 @@
+{
+  // Static site: Cloudflare serves the Astro build output as Worker assets.
+  // "name" must match the Worker name in the Cloudflare dashboard.
+  "name": "dimcore-portfolio-website",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist"
+  }
+}
