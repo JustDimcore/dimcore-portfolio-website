@@ -7,6 +7,9 @@
 // reports the context as running right away, so its state can't tell a cold output apart.
 const OUTPUT_WAKE_UP = 0.12;
 
+// The file is mastered loud: the click plays this many dB quieter than it is.
+const VOLUME_DB = -10;
+
 export interface ClickSound {
   /** Opens the audio output ahead of the click. Call it on the earliest user gesture (pointerdown). */
   warmUp(): void;
@@ -14,7 +17,7 @@ export interface ClickSound {
   play(): void;
 }
 
-export function loadClickSound(url: string, volume = 1): ClickSound {
+export function loadClickSound(url: string, volume = 10 ** (VOLUME_DB / 20)): ClickSound {
   let ctx: AudioContext | null = null;
   let openedAt = 0;
   let buffer: AudioBuffer | null = null;
