@@ -33,7 +33,7 @@ export const projects: Project[] = [
     role: 'Unity Developer',
     video: '/video/invokers.mp4',
     link: 'https://youtu.be/Z-6WQJ7YP4g',
-    site: { label: 'Google Play', url: 'https://play.google.com/store/apps/details?id=hitzone.anima.spirit.guardians' },
+    site: { label: 'Invokers', url: 'https://invokers.com/' },
     summary: 'Combat, the tools the team built it with, and the meta-game around it. Launched in July 2026.',
     points: [
       'Core gameplay and combat mechanics on ECS, and a system that manages combat visual effects.',
