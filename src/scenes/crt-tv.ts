@@ -52,6 +52,10 @@ export interface CrtTv {
   next(): void;
   /** Switches to the given channel, turning the knob as far as it takes. */
   select(index: number): void;
+  /** Shows a still (an image URL) on the screen over the channel; null goes back to the channel. */
+  showImage(url: string | null): void;
+  /** Where the screen glass is in the viewport, or null before the model is in. */
+  screenRect(): DOMRect | null;
   /** Stops rendering and frees GPU resources. */
   dispose(): void;
 }
@@ -108,6 +112,7 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
   // the next channel loads its first chunks as soon as the current one plays.
   // With reduced motion nothing plays until a click.
   let screen: CrtScreen | null = null;
+  let glassMesh: THREE.Mesh | null = null;
   const glow = createScreenGlow(container);
   const videos: ChannelVideo[] = [];
   let channel = 0;
@@ -151,6 +156,8 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
     channel = index;
     waitingForClick = false;
     onChannel?.(index);
+    still = null;
+    stillWanted = null;
     screen?.setSignal(false);
     screen?.showChannel(index + 1);
     container.dataset.signal = 'off';
@@ -210,6 +217,60 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
     wantsPlay = true;
     turnKnob(index);
     tune(index);
+  }
+
+  // A still over the channel (a screenshot the page points at). The channel keeps playing
+  // underneath and comes back when the still is taken away; a channel switch drops it.
+  const stills = new Map<string, Promise<{ texture: THREE.Texture; aspect: number }>>();
+  let still: THREE.Texture | null = null;
+  let stillWanted: string | null = null;
+  function loadStill(url: string) {
+    let loading = stills.get(url);
+    if (!loading) {
+      loading = new THREE.TextureLoader().loadAsync(url).then((texture) => {
+        texture.colorSpace = THREE.SRGBColorSpace;
+        const { width, height } = texture.image as HTMLImageElement;
+        return { texture, aspect: width / height };
+      });
+      stills.set(url, loading);
+    }
+    return loading;
+  }
+  function showImage(url: string | null) {
+    stillWanted = url;
+    if (!screen) return;
+    if (url) {
+      loadStill(url).then(({ texture, aspect }) => {
+        if (stillWanted !== url || disposed) return;
+        still = texture;
+        screen?.setImage(texture, aspect);
+        screen?.setSignal(true);
+        dirty = true;
+      }).catch(() => { /* no still: the channel stays on */ });
+      return;
+    }
+    if (!still) return;
+    still = null;
+    const video = videos[channel]?.video;
+    if (container.dataset.signal === 'on' && video) screen.setVideo(video);
+    else screen.setSignal(false);
+    dirty = true;
+  }
+
+  function screenRect() {
+    if (!glassMesh || !ready) return null;
+    const box = new THREE.Box3().setFromObject(glassMesh);
+    const r = canvas!.getBoundingClientRect();
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    const p = new THREE.Vector3();
+    for (let i = 0; i < 8; i++) {
+      p.set(i & 1 ? box.max.x : box.min.x, i & 2 ? box.max.y : box.min.y, i & 4 ? box.max.z : box.min.z).project(camera);
+      minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x);
+      minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y);
+    }
+    const x = (v: number) => r.left + ((v + 1) / 2) * r.width;
+    const y = (v: number) => r.top + ((1 - v) / 2) * r.height;
+    return new DOMRect(x(minX), y(maxY), x(maxX) - x(minX), y(minY) - y(maxY));
   }
 
   function turnKnob(index: number) {
@@ -351,7 +412,7 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
       knob.rotation.z = knobFrom + (knobTo - knobFrom) * snap(knobT);
       dirty = true;
     }
-    glow.update(dt, videos[channel]?.video ?? null, container.dataset.signal === 'on');
+    glow.update(dt, still ? null : videos[channel]?.video ?? null, container.dataset.signal === 'on');
     // The screen is alive every frame; with reduced motion it stays still until the video plays.
     if (screen && (!reducedMotion || videos[channel]?.video.paused === false)) {
       screen.update(dt);
@@ -473,6 +534,7 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
     });
 
     if (glass) {
+      glassMesh = glass;
       screen = createCrtScreen(glass);
       // the tube lights up once the TV has faded in (TvScene fades the canvas over 0.35 s)
       if (reducedMotion) screen.powerOn(true);
@@ -518,5 +580,5 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
     renderer.dispose();
   };
 
-  return { next, select, dispose };
+  return { next, select, showImage, screenRect, dispose };
 }

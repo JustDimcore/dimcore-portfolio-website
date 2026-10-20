@@ -20,6 +20,7 @@ npm run dev        # http://localhost:4321
 | `npm run build` | Static build into `dist/` |
 | `npm run verify` | Build, then check the site in Chrome (see below) |
 | `npm run video` | Prepare the clips in `public/video/` for streaming |
+| `npm run shots` | Prepare the screenshots from `screenshots/` into `public/shots/` (needs ImageMagick) |
 | `npm run model` | Prepare the TV model from `3d/` into `public/models/` |
 
 ## Pages

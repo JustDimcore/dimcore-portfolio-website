@@ -1,0 +1,205 @@
+---
+// Full-screen viewer for a project's trailer and screenshots. One per page; the page opens it with
+//   document.dispatchEvent(new CustomEvent('lightbox:open', { detail: { title, items, index, from } }))
+// where items are { kind: 'video', youtube: id, cover } or { kind: 'image', src, thumb, w, h, alt }, and
+// `from` is the rect the picture flies out of (a thumbnail, or the TV's screen).
+// Closing it sends 'lightbox:close' on the document.
+---
+
+<dialog class="lightbox" aria-label="Trailer and screenshots">
+  <div class="top">
+    <p><b data-lb-title></b> · <span data-lb-counter></span></p>
+    <button type="button" class="round" data-lb-close aria-label="Close">✕</button>
+  </div>
+  <div class="stage">
+    <button type="button" class="round arrow" data-lb-prev aria-label="Previous">‹</button>
+    <div class="frame" data-lb-frame></div>
+    <button type="button" class="round arrow" data-lb-next aria-label="Next">›</button>
+  </div>
+  <div class="strip" data-lb-strip></div>
+</dialog>
+
+<script>
+  type Item = { kind: 'video'; youtube: string; cover: string } | { kind: 'image'; src: string; thumb: string; w: number; h: number; alt: string };
+  interface Open { title: string; items: Item[]; index: number; from?: DOMRect | null }
+
+  const dialog = document.querySelector<HTMLDialogElement>('.lightbox');
+  if (dialog) {
+    const frame = dialog.querySelector<HTMLElement>('[data-lb-frame]')!;
+    const title = dialog.querySelector<HTMLElement>('[data-lb-title]')!;
+    const counter = dialog.querySelector<HTMLElement>('[data-lb-counter]')!;
+    const strip = dialog.querySelector<HTMLElement>('[data-lb-strip]')!;
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+    let items: Item[] = [];
+    let index = 0;
+
+    // the picture for one item; resolves once it has a size, so the flight lands in the right place
+    function render(item: Item): Promise<void> {
+      frame.replaceChildren();
+      if (item.kind === 'video') {
+        const iframe = document.createElement('iframe');
+        frame.style.aspectRatio = '';
+        iframe.src = `https://www.youtube-nocookie.com/embed/${item.youtube}?autoplay=1&rel=0`;
+        iframe.title = 'Trailer on YouTube';
+        iframe.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+        iframe.allowFullscreen = true;
+        frame.dataset.kind = 'video';
+        frame.append(iframe);
+        return Promise.resolve();
+      }
+      // The preview is already loaded: it fills the frame at once (soft), the full size fades
+      // in over it when it arrives. Both have the picture's own size, so nothing jumps.
+      const preview = new Image();
+      preview.src = item.thumb;
+      preview.alt = '';
+      preview.className = 'preview';
+      const img = new Image();
+      img.alt = item.alt;
+      img.width = item.w;
+      img.height = item.h;
+      img.className = 'full';
+      img.addEventListener('load', () => img.classList.add('is-loaded'), { once: true });
+      img.src = item.src;
+      frame.dataset.kind = 'image';
+      frame.style.aspectRatio = `${item.w} / ${item.h}`;
+      frame.style.setProperty('--ratio', String(item.w / item.h));
+      frame.append(preview, img);
+      return preview.decode().catch(() => {});
+    }
+
+    function show(i: number) {
+      index = (i + items.length) % items.length;
+      const item = items[index];
+      const shots = items.filter((x) => x.kind === 'image').length;
+      const shot = items.slice(0, index + 1).filter((x) => x.kind === 'image').length;
+      counter.textContent = item.kind === 'video' ? 'Trailer' : `Screenshot ${shot} / ${shots}`;
+      strip.querySelectorAll('button').forEach((b, n) => b.toggleAttribute('aria-current', n === index));
+      return render(item);
+    }
+
+    document.addEventListener('lightbox:open', async (e) => {
+      const { title: name, items: list, index: start, from } = (e as CustomEvent<Open>).detail;
+      items = list;
+      title.textContent = name;
+      strip.replaceChildren(...items.map((item, n) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = item.kind === 'video' ? 'thumb video' : 'thumb';
+        b.setAttribute('aria-label', item.kind === 'video' ? 'Trailer' : `Screenshot ${n}`);
+        const img = new Image();
+        img.src = item.kind === 'video' ? item.cover : item.thumb;
+        img.alt = '';
+        b.append(img);
+        b.addEventListener('click', () => show(n));
+        return b;
+      }));
+      const ready = show(start);
+      dialog.showModal();
+      await ready;
+      if (from && !reduced.matches) fly(from);
+    });
+
+    // FLIP: the frame starts where the picture came from and grows into place
+    function fly(from: DOMRect) {
+      const to = frame.getBoundingClientRect();
+      if (!to.width || !to.height) return;
+      const dx = from.left + from.width / 2 - (to.left + to.width / 2);
+      const dy = from.top + from.height / 2 - (to.top + to.height / 2);
+      frame.animate(
+        [{ transform: `translate(${dx}px, ${dy}px) scale(${from.width / to.width}, ${from.height / to.height})`, opacity: 0.6 }, { transform: 'none', opacity: 1 }],
+        { duration: 380, easing: 'cubic-bezier(.2, .8, .2, 1)' },
+      );
+      dialog!.animate([{ backgroundColor: 'rgb(8 6 8 / 0)' }, { backgroundColor: 'rgb(8 6 8 / 0.94)' }], { duration: 300, easing: 'ease-out' });
+    }
+
+    function close() { dialog!.close(); }
+    // the trailer stops when the viewer closes; the page hears about it as 'lightbox:close'
+    dialog.addEventListener('close', () => {
+      frame.replaceChildren();
+      document.dispatchEvent(new CustomEvent('lightbox:close'));
+    });
+    dialog.querySelector('[data-lb-close]')!.addEventListener('click', close);
+    dialog.querySelector('[data-lb-prev]')!.addEventListener('click', () => show(index - 1));
+    dialog.querySelector('[data-lb-next]')!.addEventListener('click', () => show(index + 1));
+    // a click on the dark around the picture closes it
+    dialog.addEventListener('click', (e) => { if (e.target === dialog || (e.target as HTMLElement).classList.contains('stage')) close(); });
+    dialog.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') show(index - 1);
+      if (e.key === 'ArrowRight') show(index + 1);
+    });
+    // phones: swipe sideways
+    let x0: number | null = null;
+    frame.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'mouse') x0 = e.clientX; });
+    frame.addEventListener('pointerup', (e) => {
+      if (x0 == null) return;
+      const dx = e.clientX - x0;
+      x0 = null;
+      if (Math.abs(dx) > 40) show(index + (dx < 0 ? 1 : -1));
+    });
+  }
+</script>
+
+<style>
+  /* dark in both themes: pictures read best on black */
+  .lightbox {
+    width: 100vw;
+    max-width: none;
+    height: 100dvh;
+    max-height: none;
+    margin: 0;
+    padding: 16px 24px;
+    border: 0;
+    background: rgb(8 6 8 / 0.94);
+    color: #eee;
+    font-family: var(--font-sans);
+    overscroll-behavior: contain;
+  }
+  .lightbox[open] { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 12px; }
+  .lightbox::backdrop { background: transparent; }
+
+  .top { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+  .top p { min-width: 0; margin: 0; overflow: hidden; font-size: 14px; color: #aaa; white-space: nowrap; text-overflow: ellipsis; }
+  .top b { font-weight: 500; color: #fff; }
+  .round {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 1px solid #444;
+    border-radius: 50%;
+    background: none;
+    font-size: 18px;
+    color: #ddd;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .round:hover { border-color: var(--accent); color: var(--accent); }
+  .arrow { width: 48px; height: 48px; font-size: 24px; }
+
+  .stage { display: grid; grid-template-columns: 48px minmax(0, 1fr) 48px; align-items: center; gap: 16px; min-height: 0; }
+  .frame { justify-self: center; display: grid; place-items: center; max-width: 100%; max-height: 100%; min-height: 0; touch-action: pan-y; }
+  /* the frame takes the picture's proportions and fits the screen; preview and full size stack in it */
+  .frame[data-kind="image"] { position: relative; display: block; width: min(100%, (100dvh - 200px) * var(--ratio, 1.5)); max-height: calc(100dvh - 200px); overflow: hidden; border-radius: 10px; background: #000; }
+  .frame :global(img) { display: block; width: 100%; height: 100%; object-fit: contain; user-select: none; -webkit-user-drag: none; }
+  .frame :global(.preview) { filter: blur(6px); scale: 1.02; }
+  .frame :global(.full) { position: absolute; inset: 0; opacity: 0; transition: opacity 0.25s; }
+  .frame :global(.full.is-loaded) { opacity: 1; }
+  .frame[data-kind="video"] { width: min(100%, (100dvh - 200px) * 16 / 9); aspect-ratio: 16 / 9; }
+  .frame :global(iframe) { width: 100%; height: 100%; border: 0; border-radius: 10px; background: #000; }
+
+  .strip { display: flex; justify-content: center; gap: 8px; overflow-x: auto; padding: 4px; }
+  .strip :global(.thumb) { flex: none; width: 84px; aspect-ratio: 4 / 3; padding: 0; overflow: hidden; border: 0; border-radius: 6px; background: #000; opacity: 0.5; cursor: pointer; transition: opacity 0.2s; }
+  .strip :global(.thumb img) { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .strip :global(.thumb:hover) { opacity: 0.85; }
+  .strip :global(.thumb[aria-current]) { opacity: 1; outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* phones: arrows give way to swiping, the picture takes the width */
+  @media (max-width: 640px) {
+    .lightbox { padding: 12px; }
+    .stage { grid-template-columns: minmax(0, 1fr); }
+    .arrow { display: none; }
+    .strip { justify-content: flex-start; }
+    .strip :global(.thumb) { width: 64px; }
+  }
+</style>

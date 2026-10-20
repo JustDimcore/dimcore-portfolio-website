@@ -10,6 +10,7 @@
     "check": "astro check",
     "verify": "astro build && node scripts/verify.mjs",
     "video": "node scripts/faststart.mjs public/video && node scripts/segment-video.mjs public/video",
+    "shots": "node scripts/shots.mjs",
     "model": "node scripts/split-screen.mjs 3d/CRT_TV_separate_knob_web_2k.glb public/models/crt-tv-2k.glb && node scripts/split-screen.mjs 3d/CRT_TV_separate_knob_web_1k.glb public/models/crt-tv-1k.glb"
   },
   "dependencies": {

@@ -1,5 +1,6 @@
 // Games I worked on, newest first. Source: the CV and my notes; projects under NDA go without
 // names or videos. Videos are 320x240 with no sound (see npm run video).
+import shotFiles from './shots.json';
 
 export interface Project {
   title: string;
@@ -14,6 +15,8 @@ export interface Project {
   link?: string;
   /** The game itself: its official page or store listing. */
   site?: { label: string; url: string };
+  /** Screenshots, and a still for the trailer's tile (the trailer is `link`). From npm run shots. */
+  gallery?: Gallery;
   summary: string;
   points: string[];
   stack: string[];
@@ -22,6 +25,25 @@ export interface Project {
 
 // What all four Plarium games had in common (the CV); each adds what I did on it.
 const plarium = 'A mobile client built on an in-house MVVM architecture, with NGUI or Unity UI.';
+
+export interface Shot {
+  /** Full size, loaded only when opened. */
+  src: string;
+  /** A few KB, shown at once: tiles, the viewer's strip, the TV. */
+  thumb: string;
+  w: number;
+  h: number;
+}
+export interface Gallery {
+  cover?: string;
+  shots: Shot[];
+}
+
+// What scripts/shots.mjs made from screenshots/<name>/ (public/shots/<name>/).
+const shots = (name: keyof typeof shotFiles): Gallery => ({
+  cover: shotFiles[name].cover?.thumb,
+  shots: shotFiles[name].shots,
+});
 
 export const projects: Project[] = [
   {
@@ -33,6 +55,7 @@ export const projects: Project[] = [
     role: 'Unity Developer',
     video: '/video/invokers.mp4',
     link: 'https://youtu.be/Z-6WQJ7YP4g',
+    gallery: shots('invokers'),
     site: { label: 'Invokers', url: 'https://invokers.com/' },
     summary: 'Combat, the tools the team built it with, and the meta-game around it. Launched in July 2026.',
     points: [
@@ -77,6 +100,7 @@ export const projects: Project[] = [
     role: 'Unity Developer',
     video: '/video/raid.mp4',
     link: 'https://youtu.be/gmwbHdJLadE',
+    gallery: shots('raid'),
     site: { label: 'Plarium', url: 'https://plarium.com/en/game/raid-shadow-legends/' },
     summary: plarium,
     points: ['Meta-game logic.', 'UI on uGUI with a custom MVVM framework.'],
@@ -91,6 +115,7 @@ export const projects: Project[] = [
     role: 'Unity Developer',
     video: '/video/stormfall.mp4',
     link: 'https://youtu.be/oK0ld-35WwE',
+    gallery: shots('stormfall'),
     site: { label: 'Plarium', url: 'https://plarium.com/en/game/stormfall-rise-of-balur/' },
     summary: plarium,
     points: ['UI logic on NGUI and NData.', 'The game map.', 'Animation in the game sector.'],
@@ -105,6 +130,7 @@ export const projects: Project[] = [
     role: 'Unity Developer',
     video: '/video/soldier-inc.mp4',
     link: 'https://youtu.be/g8gEZ74HxcQ',
+    gallery: shots('soldier-inc'),
     site: { label: 'Plarium', url: 'https://plarium.com/en/game/soldiers-inc-mobile-warfare/' },
     summary: plarium,
     points: ['Core gameplay.', 'UI logic on uGUI with a custom MVVM framework.', 'The 3D scene of the game sector.'],
@@ -119,6 +145,7 @@ export const projects: Project[] = [
     role: 'Unity Developer',
     video: '/video/nords.mp4',
     link: 'https://youtu.be/FUVT2KN-Af4',
+    gallery: shots('nords'),
     site: { label: 'Plarium', url: 'https://plarium.com/en/game/nords-heroes-of-the-north/' },
     summary: plarium,
     points: ['UI logic on uGUI with a custom MVVM framework.', 'Battle playback, in the spirit of Heroes of Might and Magic.'],

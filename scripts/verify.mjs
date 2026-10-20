@@ -132,6 +132,19 @@ try {
     const tabs = context.pages().length;
     await clickTv(page);
     check('projects desktop: a click on the TV opens the trailer', context.pages().length === tabs + 1);
+    // gallery: the TV shows the screenshot under the cursor, a click opens the viewer
+    const caption = () => page.locator('[data-channel-title]').textContent();
+    await page.locator('.gallery').first().scrollIntoViewIfNeeded();
+    await page.hover('.gallery [data-item="2"]');
+    await page.waitForTimeout(600);
+    check('projects desktop: hovering a screenshot puts it on the TV', /^SCREENSHOT 2\//.test(await caption()), await caption());
+    await page.click('.gallery [data-item="2"]');
+    await page.waitForTimeout(600);
+    check('projects desktop: a click opens it full size', await page.evaluate(() => document.querySelector('.lightbox').open));
+    await page.keyboard.press('Escape');
+    await page.mouse.move(5, 5);
+    await page.waitForTimeout(500);
+    check('projects desktop: the channel comes back after the gallery', !/^SCREENSHOT/.test(await caption()), await caption());
     await context.close();
   }
 
@@ -148,6 +161,11 @@ try {
     check('projects phone: scrolling leaves the TV alone', (await tvState(page)).channel === 2);
     const bar = await page.evaluate(() => getComputedStyle(document.querySelector('[data-project]'), '::before').display);
     check('projects phone: no project marked as on the TV', bar === 'none');
+    const before = await page.locator('[data-channel-title]').textContent();
+    await page.locator('.gallery [data-item="1"]').first().click();
+    await page.waitForTimeout(600);
+    check('projects phone: a screenshot opens full size, the TV stays as it was',
+      (await page.evaluate(() => document.querySelector('.lightbox').open)) && (await page.locator('[data-channel-title]').textContent()) === before);
     await context.close();
   }
 } catch (err) {

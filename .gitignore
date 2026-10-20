@@ -6,6 +6,7 @@ dist/
 # Local sources and working files (not part of the site build)
 3d/
 videos/
+screenshots/
 CVs/
 mockup/
 .claude/

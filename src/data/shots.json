@@ -1,0 +1,179 @@
+{
+  "invokers": {
+    "cover": {
+      "thumb": "/shots/invokers/cover-thumb.webp",
+      "w": 288,
+      "h": 216
+    },
+    "shots": [
+      {
+        "src": "/shots/invokers/01.webp",
+        "thumb": "/shots/invokers/01-thumb.webp",
+        "w": 1600,
+        "h": 720
+      },
+      {
+        "src": "/shots/invokers/02.webp",
+        "thumb": "/shots/invokers/02-thumb.webp",
+        "w": 1280,
+        "h": 1182
+      },
+      {
+        "src": "/shots/invokers/03.webp",
+        "thumb": "/shots/invokers/03-thumb.webp",
+        "w": 1600,
+        "h": 720
+      },
+      {
+        "src": "/shots/invokers/04.webp",
+        "thumb": "/shots/invokers/04-thumb.webp",
+        "w": 1600,
+        "h": 720
+      },
+      {
+        "src": "/shots/invokers/05.webp",
+        "thumb": "/shots/invokers/05-thumb.webp",
+        "w": 1600,
+        "h": 720
+      }
+    ]
+  },
+  "nords": {
+    "cover": {
+      "thumb": "/shots/nords/cover-thumb.webp",
+      "w": 288,
+      "h": 216
+    },
+    "shots": [
+      {
+        "src": "/shots/nords/01.webp",
+        "thumb": "/shots/nords/01-thumb.webp",
+        "w": 1263,
+        "h": 892
+      },
+      {
+        "src": "/shots/nords/02.webp",
+        "thumb": "/shots/nords/02-thumb.webp",
+        "w": 768,
+        "h": 1024
+      },
+      {
+        "src": "/shots/nords/03.webp",
+        "thumb": "/shots/nords/03-thumb.webp",
+        "w": 768,
+        "h": 1024
+      },
+      {
+        "src": "/shots/nords/04.webp",
+        "thumb": "/shots/nords/04-thumb.webp",
+        "w": 453,
+        "h": 720
+      }
+    ]
+  },
+  "raid": {
+    "cover": {
+      "thumb": "/shots/raid/cover-thumb.webp",
+      "w": 288,
+      "h": 216
+    },
+    "shots": [
+      {
+        "src": "/shots/raid/01.webp",
+        "thumb": "/shots/raid/01-thumb.webp",
+        "w": 1600,
+        "h": 900
+      },
+      {
+        "src": "/shots/raid/02.webp",
+        "thumb": "/shots/raid/02-thumb.webp",
+        "w": 1600,
+        "h": 900
+      },
+      {
+        "src": "/shots/raid/03.webp",
+        "thumb": "/shots/raid/03-thumb.webp",
+        "w": 1600,
+        "h": 900
+      },
+      {
+        "src": "/shots/raid/04.webp",
+        "thumb": "/shots/raid/04-thumb.webp",
+        "w": 1600,
+        "h": 900
+      },
+      {
+        "src": "/shots/raid/05.webp",
+        "thumb": "/shots/raid/05-thumb.webp",
+        "w": 1600,
+        "h": 900
+      }
+    ]
+  },
+  "soldier-inc": {
+    "cover": {
+      "thumb": "/shots/soldier-inc/cover-thumb.webp",
+      "w": 331,
+      "h": 216
+    },
+    "shots": [
+      {
+        "src": "/shots/soldier-inc/01.webp",
+        "thumb": "/shots/soldier-inc/01-thumb.webp",
+        "w": 1200,
+        "h": 1600
+      },
+      {
+        "src": "/shots/soldier-inc/02.webp",
+        "thumb": "/shots/soldier-inc/02-thumb.webp",
+        "w": 1200,
+        "h": 1600
+      },
+      {
+        "src": "/shots/soldier-inc/03.webp",
+        "thumb": "/shots/soldier-inc/03-thumb.webp",
+        "w": 750,
+        "h": 1334
+      },
+      {
+        "src": "/shots/soldier-inc/04.webp",
+        "thumb": "/shots/soldier-inc/04-thumb.webp",
+        "w": 1200,
+        "h": 1600
+      }
+    ]
+  },
+  "stormfall": {
+    "cover": {
+      "thumb": "/shots/stormfall/cover-thumb.webp",
+      "w": 288,
+      "h": 216
+    },
+    "shots": [
+      {
+        "src": "/shots/stormfall/01.webp",
+        "thumb": "/shots/stormfall/01-thumb.webp",
+        "w": 1200,
+        "h": 1600
+      },
+      {
+        "src": "/shots/stormfall/02.webp",
+        "thumb": "/shots/stormfall/02-thumb.webp",
+        "w": 1200,
+        "h": 1600
+      },
+      {
+        "src": "/shots/stormfall/03.webp",
+        "thumb": "/shots/stormfall/03-thumb.webp",
+        "w": 1200,
+        "h": 1600
+      },
+      {
+        "src": "/shots/stormfall/04.webp",
+        "thumb": "/shots/stormfall/04-thumb.webp",
+        "w": 1200,
+        "h": 1600
+      }
+    ]
+  }
+}
