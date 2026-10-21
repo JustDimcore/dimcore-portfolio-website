@@ -23,7 +23,7 @@ const youtubeId = (url: string) => url.match(/(?:youtu\.be\/|[?&]v=)([\w-]{11})/
 
       {projects.map((p, i) => (
         <article class:list={['project', { nda: p.nda, 'is-on': i === 0 }]} data-project={i} aria-labelledby={`project-${i}`}>
-          <p class="meta">{p.studio} · {p.years}{!p.nda && <span class="on-air">On the TV</span>}</p>
+          <p class="meta">{p.studio} · {p.years}</p>
           {p.nda ? (
             <>
               <!-- no name to show: the line describes the game, and says why -->
@@ -223,9 +223,6 @@ const youtubeId = (url: string) => url.match(/(?:youtu\.be\/|[?&]v=)([\w-]{11})/
   .project.is-on::before { opacity: 1; }
   .project:not(.is-on) { opacity: 0.5; }
   .project:not(.is-on):hover { opacity: 1; }
-  .on-air { display: none; align-items: center; gap: 6px; color: var(--accent); }
-  .on-air::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
-  .is-on .on-air { display: inline-flex; }
   .list { padding-bottom: 48px; }
   .meta { display: flex; align-items: center; gap: 10px; margin: 0 0 8px; font-size: 14px; color: var(--muted); }
   h2 { margin: 0; font-size: 32px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.15; }
@@ -273,7 +270,7 @@ const youtubeId = (url: string) => url.match(/(?:youtu\.be\/|[?&]v=)([\w-]{11})/
     .page { grid-template-columns: minmax(0, 1fr); gap: 0; }
     .screen { order: -1; margin: 0 calc(-1 * var(--gutter)); }
     /* the TV has scrolled away: no project is marked as the one on it */
-    .is-on .on-air, .project::before, .intro .tunes, .gallery-note { display: none; }
+    .project::before, .intro .tunes, .gallery-note { display: none; }
     .project:not(.is-on) { opacity: 1; }
     .sticky { position: static; height: 40vh; --tv-caption-right: var(--gutter); --tv-caption-bottom: 8px; }
     h1 { margin-top: 32px; font-size: 36px; }
