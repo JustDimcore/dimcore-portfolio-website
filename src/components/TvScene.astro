@@ -227,6 +227,15 @@ const total = String(channels.length).padStart(2, '0');
       el.querySelector('[data-next]')?.addEventListener('click', () => tv.next());
       // the page can tune the TV: el.dispatchEvent(new CustomEvent('tv:select', { detail: index }))
       el.addEventListener('tv:select', (e) => tv.select(kept.indexOf((e as CustomEvent<number>).detail)));
+      // ...put a still on the screen, with its own caption: detail { src, label }, or null to go back
+      el.addEventListener('tv:image', (e) => {
+        const still = (e as CustomEvent<{ src: string; label: string } | null>).detail;
+        tv.showImage(still?.src ?? null);
+        if (title) title.textContent = still?.label ?? current?.title ?? '';
+      });
+      // ...and ask where the screen is: el.dispatchEvent(new CustomEvent('tv:rect', { detail: box })),
+      // then box.rect is a DOMRect (or null)
+      el.addEventListener('tv:rect', (e) => { (e as CustomEvent<{ rect: DOMRect | null }>).detail.rect = tv.screenRect(); });
     });
   }
 </script>

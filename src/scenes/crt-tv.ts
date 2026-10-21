@@ -52,6 +52,10 @@ export interface CrtTv {
   next(): void;
   /** Switches to the given channel, turning the knob as far as it takes. */
   select(index: number): void;
+  /** Shows a still (an image URL) on the screen over the channel; null goes back to the channel. */
+  showImage(url: string | null): void;
+  /** Where the screen glass is in the viewport, or null before the model is in. */
+  screenRect(): DOMRect | null;
   /** Stops rendering and frees GPU resources. */
   dispose(): void;
 }
@@ -108,6 +112,7 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
   // the next channel loads its first chunks as soon as the current one plays.
   // With reduced motion nothing plays until a click.
   let screen: CrtScreen | null = null;
+  let glassMesh: THREE.Mesh | null = null;
   const glow = createScreenGlow(container);
   const videos: ChannelVideo[] = [];
   let channel = 0;
@@ -151,6 +156,8 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
     channel = index;
     waitingForClick = false;
     onChannel?.(index);
+    still = null;
+    stillWanted = null;
     screen?.setSignal(false);
     screen?.showChannel(index + 1);
     container.dataset.signal = 'off';
@@ -210,6 +217,60 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
     wantsPlay = true;
     turnKnob(index);
     tune(index);
+  }
+
+  // A still over the channel (a screenshot the page points at). The channel keeps playing
+  // underneath and comes back when the still is taken away; a channel switch drops it.
+  const stills = new Map<string, Promise<{ texture: THREE.Texture; aspect: number }>>();
+  let still: THREE.Texture | null = null;
+  let stillWanted: string | null = null;
+  function loadStill(url: string) {
+    let loading = stills.get(url);
+    if (!loading) {
+      loading = new THREE.TextureLoader().loadAsync(url).then((texture) => {
+        texture.colorSpace = THREE.SRGBColorSpace;
+        const { width, height } = texture.image as HTMLImageElement;
+        return { texture, aspect: width / height };
+      });
+      stills.set(url, loading);
+    }
+    return loading;
+  }
+  function showImage(url: string | null) {
+    stillWanted = url;
+    if (!screen) return;
+    if (url) {
+      loadStill(url).then(({ texture, aspect }) => {
+        if (stillWanted !== url || disposed) return;
+        still = texture;
+        screen?.setImage(texture, aspect);
+        screen?.setSignal(true);
+        dirty = true;
+      }).catch(() => { /* no still: the channel stays on */ });
+      return;
+    }
+    if (!still) return;
+    still = null;
+    const video = videos[channel]?.video;
+    if (container.dataset.signal === 'on' && video) screen.setVideo(video);
+    else screen.setSignal(false);
+    dirty = true;
+  }
+
+  function screenRect() {
+    if (!glassMesh || !ready) return null;
+    const box = new THREE.Box3().setFromObject(glassMesh);
+    const r = canvas!.getBoundingClientRect();
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    const p = new THREE.Vector3();
+    for (let i = 0; i < 8; i++) {
+      p.set(i & 1 ? box.max.x : box.min.x, i & 2 ? box.max.y : box.min.y, i & 4 ? box.max.z : box.min.z).project(camera);
+      minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x);
+      minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y);
+    }
+    const x = (v: number) => r.left + ((v + 1) / 2) * r.width;
+    const y = (v: number) => r.top + ((1 - v) / 2) * r.height;
+    return new DOMRect(x(minX), y(maxY), x(maxX) - x(minX), y(minY) - y(maxY));
   }
 
   function turnKnob(index: number) {
@@ -351,7 +412,7 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
       knob.rotation.z = knobFrom + (knobTo - knobFrom) * snap(knobT);
       dirty = true;
     }
-    glow.update(dt, videos[channel]?.video ?? null, container.dataset.signal === 'on');
+    glow.update(dt, still ? null : videos[channel]?.video ?? null, container.dataset.signal === 'on');
     // The screen is alive every frame; with reduced motion it stays still until the video plays.
     if (screen && (!reducedMotion || videos[channel]?.video.paused === false)) {
       screen.update(dt);
@@ -375,7 +436,11 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
     videos[channel]?.video.pause();
   }
 
+  // the last time a real mouse moved: while it's in use, it steers and the tilt stays out
+  let mouseAt = -Infinity;
   function onPointerMove(e: PointerEvent) {
+    if (e.pointerType !== 'mouse') return;
+    mouseAt = performance.now();
     const r = container.getBoundingClientRect();
     pointer.set(
       THREE.MathUtils.clamp((e.clientX - (r.left + r.width / 2)) / (window.innerWidth / 2), -1, 1),
@@ -386,12 +451,14 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
     pointer.set(0, 0);
   }
 
-  // Phones and tablets have no cursor: tilting the device turns the view instead.
+  // Phones and tablets have no cursor: tilting the device turns the view instead. Both are
+  // listened to, since devices don't say reliably which they are (Android phones with a stylus
+  // report hover); whichever moves steers.
   // The way the phone is held is the neutral position; it drifts after the hand, so only
   // a change of tilt counts. Axes follow the screen orientation.
   let tiltBase: { beta: number; gamma: number } | null = null;
   function onOrientation(e: DeviceOrientationEvent) {
-    if (e.beta == null || e.gamma == null) return;
+    if (e.beta == null || e.gamma == null || performance.now() - mouseAt < 2000) return;
     tiltBase ??= { beta: e.beta, gamma: e.gamma };
     tiltBase.beta += (e.beta - tiltBase.beta) * TILT_DRIFT;
     tiltBase.gamma += (e.gamma - tiltBase.gamma) * TILT_DRIFT;
@@ -401,21 +468,41 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
     pointer.set(THREE.MathUtils.clamp(x / TILT_RANGE, -1, 1), THREE.MathUtils.clamp(-y / TILT_RANGE, -1, 1));
   }
   const listenTilt = () => window.addEventListener('deviceorientation', onOrientation);
-  // iOS gives the sensor only after asking, and asking needs a tap
+  // Some browsers send the sensor only after asking (requestPermission). Chrome has the method too
+  // but answers at once without a prompt, so it's asked right away; Safari on iOS needs a tap for
+  // it and sends no click for a tap on plain page content, so then every touchend asks until
+  // there's an answer (a call outside a gesture just fails).
   function askTilt() {
     const ask = (DeviceOrientationEvent as unknown as { requestPermission?: () => Promise<string> }).requestPermission;
-    ask?.().then((state) => state === 'granted' && listenTilt()).catch(() => { /* declined: the TV just stays still */ });
+    ask?.()
+      .then((state) => {
+        stopAsking();
+        if (state === 'granted') listenTilt();
+      })
+      .catch(() => { /* not a gesture after all: the next tap asks again */ });
   }
+  const stopAsking = () => {
+    window.removeEventListener('touchend', askTilt);
+    stopAsking();
+  };
 
-  const touchOnly = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
-  if (!reducedMotion && touchOnly && 'DeviceOrientationEvent' in window) {
-    const needsPermission = typeof (DeviceOrientationEvent as unknown as { requestPermission?: unknown }).requestPermission === 'function';
-    if (needsPermission) window.addEventListener('click', askTilt, { once: true });
-    else listenTilt();
-  } else if (!reducedMotion) {
+  if (!reducedMotion) {
     window.addEventListener('pointermove', onPointerMove, { passive: true });
     document.documentElement.addEventListener('pointerleave', onPointerLeave);
     window.addEventListener('blur', onPointerLeave);
+  }
+  if (!reducedMotion && 'DeviceOrientationEvent' in window) {
+    const needsPermission = typeof (DeviceOrientationEvent as unknown as { requestPermission?: unknown }).requestPermission === 'function';
+    // listening costs nothing where nothing comes; where permission is needed, events start once given
+    listenTilt();
+    if (needsPermission) {
+      window.addEventListener('touchend', askTilt);
+      window.addEventListener('click', askTilt);
+      askTilt();
+    }
+    // browsers give the sensors to https (and localhost) only
+    const touch = window.matchMedia('(pointer: coarse)').matches;
+    if (touch && !window.isSecureContext) console.warn('crt-tv: tilt needs https, the TV stays still over http');
   }
 
   const resizeObserver = new ResizeObserver(resize);
@@ -473,6 +560,7 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
     });
 
     if (glass) {
+      glassMesh = glass;
       screen = createCrtScreen(glass);
       // the tube lights up once the TV has faded in (TvScene fades the canvas over 0.35 s)
       if (reducedMotion) screen.powerOn(true);
@@ -518,5 +606,5 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
     renderer.dispose();
   };
 
-  return { next, select, dispose };
+  return { next, select, showImage, screenRect, dispose };
 }

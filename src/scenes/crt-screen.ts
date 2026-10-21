@@ -103,6 +103,8 @@ export interface CrtScreen {
   setSignal(on: boolean): void;
   /** Puts this video on the picture (shown once the signal is on). */
   setVideo(video: HTMLVideoElement): void;
+  /** Puts a still on the picture instead (a screenshot); width / height of it. */
+  setImage(texture: THREE.Texture, aspect: number): void;
   /** Switches the tube on: a line that opens into the picture, or at once. */
   powerOn(instant?: boolean): void;
   /** Shows the channel number in the corner of the screen for a moment. */
@@ -200,6 +202,11 @@ export function createCrtScreen(mesh: THREE.Mesh): CrtScreen {
       }
       uniforms.uVideo.value = texture;
       if (video.videoHeight) uniforms.uVideoAspect.value = video.videoWidth / video.videoHeight;
+    },
+    setImage(texture, aspect) {
+      uniforms.uVideo.value = texture;
+      uniforms.uVideoAspect.value = aspect;
+      uniforms.uGlitch.value = 0.5;   // a short jolt, like the tube catching a new picture
     },
     dispose() {
       for (const texture of textures.values()) texture.dispose();
