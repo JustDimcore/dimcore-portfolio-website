@@ -18,6 +18,7 @@ const MAX_YAW = THREE.MathUtils.degToRad(10);    // camera swing as the TV "look
 const MAX_PITCH = THREE.MathUtils.degToRad(5);   // and up-down
 const DAMPING = 4;                               // how fast the view follows the cursor, 1/s
 const TILT_RANGE = 15;                           // degrees of phone tilt for the full swing
+const TILT_SWING = 1.5;                          // phones swing this much further than the cursor does
 const TILT_DRIFT = 0.01;                         // how fast the neutral tilt follows the hand, per event
 
 // The TV's body in model metres, without the antennas and the cable: the clickable area.
@@ -465,7 +466,10 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
     const db = e.beta - tiltBase.beta, dg = e.gamma - tiltBase.gamma;
     const angle = window.screen.orientation?.angle ?? 0;
     const [x, y] = angle === 90 ? [db, -dg] : angle === 270 ? [-db, dg] : angle === 180 ? [-dg, -db] : [dg, db];
-    pointer.set(THREE.MathUtils.clamp(x / TILT_RANGE, -1, 1), THREE.MathUtils.clamp(-y / TILT_RANGE, -1, 1));
+    pointer.set(
+      THREE.MathUtils.clamp(x / TILT_RANGE, -1, 1) * TILT_SWING,
+      THREE.MathUtils.clamp(-y / TILT_RANGE, -1, 1) * TILT_SWING,
+    );
   }
   const listenTilt = () => window.addEventListener('deviceorientation', onOrientation);
   // Some browsers send the sensor only after asking (requestPermission). Chrome has the method too
