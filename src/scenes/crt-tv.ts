@@ -436,7 +436,11 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
     videos[channel]?.video.pause();
   }
 
+  // the last time a real mouse moved: while it's in use, it steers and the tilt stays out
+  let mouseAt = -Infinity;
   function onPointerMove(e: PointerEvent) {
+    if (e.pointerType !== 'mouse') return;
+    mouseAt = performance.now();
     const r = container.getBoundingClientRect();
     pointer.set(
       THREE.MathUtils.clamp((e.clientX - (r.left + r.width / 2)) / (window.innerWidth / 2), -1, 1),
@@ -447,12 +451,14 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
     pointer.set(0, 0);
   }
 
-  // Phones and tablets have no cursor: tilting the device turns the view instead.
+  // Phones and tablets have no cursor: tilting the device turns the view instead. Both are
+  // listened to, since devices don't say reliably which they are (Android phones with a stylus
+  // report hover); whichever moves steers.
   // The way the phone is held is the neutral position; it drifts after the hand, so only
   // a change of tilt counts. Axes follow the screen orientation.
   let tiltBase: { beta: number; gamma: number } | null = null;
   function onOrientation(e: DeviceOrientationEvent) {
-    if (e.beta == null || e.gamma == null) return;
+    if (e.beta == null || e.gamma == null || performance.now() - mouseAt < 2000) return;
     tiltBase ??= { beta: e.beta, gamma: e.gamma };
     tiltBase.beta += (e.beta - tiltBase.beta) * TILT_DRIFT;
     tiltBase.gamma += (e.gamma - tiltBase.gamma) * TILT_DRIFT;
@@ -462,21 +468,41 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
     pointer.set(THREE.MathUtils.clamp(x / TILT_RANGE, -1, 1), THREE.MathUtils.clamp(-y / TILT_RANGE, -1, 1));
   }
   const listenTilt = () => window.addEventListener('deviceorientation', onOrientation);
-  // iOS gives the sensor only after asking, and asking needs a tap
+  // Some browsers send the sensor only after asking (requestPermission). Chrome has the method too
+  // but answers at once without a prompt, so it's asked right away; Safari on iOS needs a tap for
+  // it and sends no click for a tap on plain page content, so then every touchend asks until
+  // there's an answer (a call outside a gesture just fails).
   function askTilt() {
     const ask = (DeviceOrientationEvent as unknown as { requestPermission?: () => Promise<string> }).requestPermission;
-    ask?.().then((state) => state === 'granted' && listenTilt()).catch(() => { /* declined: the TV just stays still */ });
+    ask?.()
+      .then((state) => {
+        stopAsking();
+        if (state === 'granted') listenTilt();
+      })
+      .catch(() => { /* not a gesture after all: the next tap asks again */ });
   }
+  const stopAsking = () => {
+    window.removeEventListener('touchend', askTilt);
+    stopAsking();
+  };
 
-  const touchOnly = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
-  if (!reducedMotion && touchOnly && 'DeviceOrientationEvent' in window) {
-    const needsPermission = typeof (DeviceOrientationEvent as unknown as { requestPermission?: unknown }).requestPermission === 'function';
-    if (needsPermission) window.addEventListener('click', askTilt, { once: true });
-    else listenTilt();
-  } else if (!reducedMotion) {
+  if (!reducedMotion) {
     window.addEventListener('pointermove', onPointerMove, { passive: true });
     document.documentElement.addEventListener('pointerleave', onPointerLeave);
     window.addEventListener('blur', onPointerLeave);
+  }
+  if (!reducedMotion && 'DeviceOrientationEvent' in window) {
+    const needsPermission = typeof (DeviceOrientationEvent as unknown as { requestPermission?: unknown }).requestPermission === 'function';
+    // listening costs nothing where nothing comes; where permission is needed, events start once given
+    listenTilt();
+    if (needsPermission) {
+      window.addEventListener('touchend', askTilt);
+      window.addEventListener('click', askTilt);
+      askTilt();
+    }
+    // browsers give the sensors to https (and localhost) only
+    const touch = window.matchMedia('(pointer: coarse)').matches;
+    if (touch && !window.isSecureContext) console.warn('crt-tv: tilt needs https, the TV stays still over http');
   }
 
   const resizeObserver = new ResizeObserver(resize);
