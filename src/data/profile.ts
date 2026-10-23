@@ -6,6 +6,8 @@ export const links = {
   email: 'dimcore.dev@gmail.com',
   linkedin: 'https://www.linkedin.com/in/dimcore/',
   github: 'https://github.com/JustDimcore',
+  /** 30-minute call, booked on Calendly. */
+  call: 'https://calendly.com/dimcore-dev/30min',
 };
 
 /** The core of the stack: highlighted wherever they appear in the skills. */

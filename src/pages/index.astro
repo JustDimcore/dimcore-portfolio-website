@@ -120,19 +120,26 @@ import { links, coreSkills, skills, experience, education, languages, contacts, 
 
     <section class="section" id="contact" aria-labelledby="contact-title">
       <h2 id="contact-title" class="label">Contact</h2>
-      <dl class="contacts">
-        {contacts.map((c) => (
-          <div>
-            <dt>{c.label}</dt>
-            <dd>
-              <a href={c.href} {...(c.href.startsWith('http') ? { target: '_blank', rel: 'noopener' } : {})}>{c.text}</a>
-              {c.href.startsWith('mailto:') && (
-                <button type="button" class="copy" data-copy={c.text} aria-label={`Copy ${c.text}`}>copy</button>
-              )}
-            </dd>
-          </div>
-        ))}
-      </dl>
+      <div>
+        <dl class="contacts">
+          {contacts.map((c) => (
+            <div>
+              <dt>{c.label}</dt>
+              <dd>
+                <a href={c.href} {...(c.href.startsWith('http') ? { target: '_blank', rel: 'noopener' } : {})}>{c.text}</a>
+                {c.href.startsWith('mailto:') && (
+                  <button type="button" class="copy" data-copy={c.text} aria-label={`Copy ${c.text}`}>copy</button>
+                )}
+              </dd>
+            </div>
+          ))}
+        </dl>
+        <a class="book" href={links.call} target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2" /><path d="M3.5 9.5h17M8 3v4M16 3v4" /></svg>
+          Book a call
+          <span class="book-note">30 min · Calendly ↗</span>
+        </a>
+      </div>
     </section>
 
     <section class="section last-section" id="cv" aria-labelledby="cv-title">
@@ -319,6 +326,25 @@ import { links, coreSkills, skills, experience, education, languages, contacts, 
   .cvs a:hover .cv-role { color: var(--accent); }
   .cv-note { grid-column: 1; font-size: 14px; color: var(--muted); }
   .cv-file { grid-column: 2; grid-row: 1 / 3; align-self: center; font-size: 12px; letter-spacing: 0.06em; color: var(--muted); }
+
+  /* the one filled button on the page: the easiest next step */
+  .book {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 32px;
+    padding: 12px 20px;
+    border-radius: 999px;
+    background: var(--accent);
+    color: var(--bg);
+    font-size: 16px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: filter 0.2s;
+  }
+  .book:hover { filter: brightness(1.08); }
+  .book svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+  .book-note { font-size: 13px; font-weight: 400; opacity: 0.75; }
 
   .contacts { display: grid; gap: 14px; margin: 0; }
   .contacts div { display: grid; grid-template-columns: 140px minmax(0, 1fr); align-items: baseline; gap: 24px; }
