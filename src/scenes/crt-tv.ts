@@ -321,13 +321,6 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
     canvas.addEventListener('pointerleave', onHoverEnd);
   }
 
-  // Open the audio output while the button is still held down, so the first click isn't clipped.
-  const warmUpSound = () => click?.warmUp();
-  if (click) {
-    container.addEventListener('pointerdown', warmUpSound);
-    container.addEventListener('keydown', warmUpSound);
-  }
-
   function onVisibilityChange() {
     if (document.hidden) videos[channel]?.video.pause();
     else playVideo();
@@ -593,8 +586,6 @@ export function mount(container: HTMLElement, { modelUrl, videos: videoUrls = []
     canvas.removeEventListener('click', onClick);
     canvas.removeEventListener('pointermove', onHover);
     canvas.removeEventListener('pointerleave', onHoverEnd);
-    container.removeEventListener('pointerdown', warmUpSound);
-    container.removeEventListener('keydown', warmUpSound);
     for (const ch of videos) ch?.dispose();
     screen?.dispose();
     scene.traverse((o) => {
