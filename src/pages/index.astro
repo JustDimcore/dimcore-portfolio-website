@@ -39,13 +39,16 @@ import { links, coreSkills, skills, experience, education, languages, contacts, 
 
     <section class="section" id="about" aria-labelledby="about-title">
       <h2 id="about-title" class="label">About</h2>
-      <!-- the years are part of the story, not a row of big numbers -->
-      <p class="lead">
-        <span class="hi">Hi, I'm Dmytro and I build and create things.</span> I'm a software engineer specializing
-        in game and web development with over 12 years of commercial <a href="#experience">experience</a>.
-        Since 2014, I have worked on diverse <a href={links.projects}>projects</a> across
-        various <a href="#skills">technologies</a>, focusing mostly on Unity/C# for games and Angular/TypeScript for web apps.
-      </p>
+      <!-- the photo beside the text, level with its first line -->
+      <div class="about-text">
+        <img class="photo" src="/img/dmytro.webp" alt="Dmytro Ilchenko" width="320" height="320" loading="lazy" decoding="async" />
+        <p class="lead">
+          <span class="hi">Hi, I'm Dmytro and I build and create things.</span> I'm a software engineer specializing
+          in game and web development with <span class="hi">over 12 years</span> of commercial <a href="#experience">experience</a>.
+          Since 2014, I have worked on diverse <a href={links.projects}>projects</a> across
+          various <a href="#skills">technologies</a>, focusing mostly on Unity/C# for games and Angular/TypeScript for web apps.
+        </p>
+      </div>
     </section>
 
     <section class="section" id="skills" aria-labelledby="skills-title">
@@ -273,6 +276,8 @@ import { links, coreSkills, skills, experience, education, languages, contacts, 
   /* about */
   /* the greeting stands out, the rest of the text is quieter */
   #about { padding: 88px 0; }
+  .about-text { display: flex; align-items: flex-start; gap: 32px; }
+  .photo { flex: none; display: block; width: 120px; height: 120px; margin-top: 6px; border-radius: 50%; object-fit: cover; outline: 1px solid var(--line); outline-offset: 4px; }
   .lead {
     max-width: 760px;
     margin: 0;
@@ -378,6 +383,9 @@ import { links, coreSkills, skills, experience, education, languages, contacts, 
       --tv-caption-bottom: 12px;
     }
     .section, #about { grid-template-columns: minmax(0, 1fr); gap: 20px; padding: 40px 0; }
+    /* narrow: the text flows around the photo instead of squeezing into a column beside it */
+    .about-text { display: block; }
+    .photo { float: left; width: 76px; height: 76px; margin: 6px 18px 6px 0; shape-outside: circle(50%); shape-margin: 12px; }
     .last-section { padding-bottom: 64px; }
   }
   @media (max-width: 640px) {
