@@ -139,6 +139,17 @@ const total = String(channels.length).padStart(2, '0');
     color: var(--muted);
   }
   .caption .title { font-size: clamp(16px, 4.6vw, 22px); letter-spacing: 0.03em; }
+  /* narrow screens: the caption lies over the TV and its cable, so it gets a backing of the page
+     colour, lightly frosted, to stay readable (the light theme most of all) */
+  @media (max-width: 1024px) {
+    .caption {
+      padding: 8px 12px;
+      border-radius: 10px;
+      background: color-mix(in srgb, var(--bg) 55%, transparent);
+      -webkit-backdrop-filter: blur(3px);
+      backdrop-filter: blur(3px);
+    }
+  }
   .caption b { font-weight: 500; color: var(--accent); }
 
   /* the channel's video failed to load (crt-tv.ts sets data-signal="lost") */
