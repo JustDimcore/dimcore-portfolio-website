@@ -76,5 +76,8 @@ checks change with it.
 
 **Change a colour**: the token in `global.css`, in all three blocks that define it: `:root` (dark), `[data-theme="light"]` and the `prefers-color-scheme: light` one.
 
+**Update a CV** (`public/cv/*.pdf`): edit the HTML in `CVs/`, then print it to PDF with Chrome
+(A4, backgrounds on) under the same file name.
+
 **Change the Open Graph image** (`public/og.png`): a 1200×630 screenshot of the home page top in the
 dark theme, without the theme switch.

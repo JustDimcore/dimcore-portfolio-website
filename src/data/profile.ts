@@ -172,3 +172,9 @@ export const contacts = [
   { label: 'LinkedIn', text: 'linkedin.com/in/dimcore', href: links.linkedin },
   { label: 'GitHub', text: 'github.com/JustDimcore', href: links.github },
 ];
+
+/** CVs to download (public/cv/, printed to PDF from CVs/<name>.html). */
+export const cvs = [
+  { role: 'Unity Developer', note: 'Games · Unity, C#, .NET', href: '/cv/Dmytro_Ilchenko_CV_Unity.pdf' },
+  { role: 'Frontend Developer', note: 'Web · TypeScript, Angular, React', href: '/cv/Dmytro_Ilchenko_CV_Frontend.pdf' },
+];

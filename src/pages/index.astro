@@ -5,7 +5,7 @@ import QuickContacts from '../components/QuickContacts.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import SiteHeader from '../components/SiteHeader.astro';
 import { channels } from '../data/channels';
-import { links, coreSkills, skills, experience, education, languages, contacts } from '../data/profile';
+import { links, coreSkills, skills, experience, education, languages, contacts, cvs } from '../data/profile';
 ---
 
 <Base title="Dmytro Ilchenko — Software Engineer">
@@ -118,7 +118,7 @@ import { links, coreSkills, skills, experience, education, languages, contacts }
       </div>
     </section>
 
-    <section class="section last-section" id="contact" aria-labelledby="contact-title">
+    <section class="section" id="contact" aria-labelledby="contact-title">
       <h2 id="contact-title" class="label">Contact</h2>
       <dl class="contacts">
         {contacts.map((c) => (
@@ -133,6 +133,21 @@ import { links, coreSkills, skills, experience, education, languages, contacts }
           </div>
         ))}
       </dl>
+    </section>
+
+    <section class="section last-section" id="cv" aria-labelledby="cv-title">
+      <h2 id="cv-title" class="label">CV</h2>
+      <ul class="cvs">
+        {cvs.map((cv) => (
+          <li>
+            <a href={cv.href} target="_blank" rel="noopener">
+              <span class="cv-role">{cv.role}</span>
+              <span class="cv-note">{cv.note}</span>
+              <span class="cv-file mono">PDF ↗</span>
+            </a>
+          </li>
+        ))}
+      </ul>
     </section>
   </main>
 
@@ -296,6 +311,15 @@ import { links, coreSkills, skills, experience, education, languages, contacts }
   .languages dd { margin: 0; font-size: 15px; color: var(--muted); }
 
   /* contact */
+  /* CVs: two cards side by side */
+  .cvs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; max-width: 900px; margin: 0; padding: 0; list-style: none; }
+  .cvs a { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 16px; padding: 20px 22px; border: 1px solid var(--line); border-radius: 12px; text-decoration: none; transition: border-color 0.2s; }
+  .cvs a:hover { border-color: var(--accent); }
+  .cv-role { font-size: clamp(19px, 2vw, 24px); letter-spacing: -0.01em; transition: color 0.2s; }
+  .cvs a:hover .cv-role { color: var(--accent); }
+  .cv-note { grid-column: 1; font-size: 14px; color: var(--muted); }
+  .cv-file { grid-column: 2; grid-row: 1 / 3; align-self: center; font-size: 12px; letter-spacing: 0.06em; color: var(--muted); }
+
   .contacts { display: grid; gap: 14px; margin: 0; }
   .contacts div { display: grid; grid-template-columns: 140px minmax(0, 1fr); align-items: baseline; gap: 24px; }
   .contacts dt { font-size: 15px; color: var(--muted); }
@@ -335,6 +359,7 @@ import { links, coreSkills, skills, experience, education, languages, contacts }
   }
   @media (max-width: 480px) {
     .timeline > li, .contacts div, .sheet dl div { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+    .cvs { grid-template-columns: minmax(0, 1fr); }
     .sheet dt { font-size: 13px; }
   }
 </style>
