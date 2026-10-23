@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- favicon.svg with the cursor off: the page swaps the two to blink it -->
+  <rect width="32" height="32" rx="7" fill="#151014"/>
+  <path d="M7 9.5l6.5 6.5-6.5 6.5" fill="none" stroke="#f1e7eb" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

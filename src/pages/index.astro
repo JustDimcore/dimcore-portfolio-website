@@ -5,7 +5,7 @@ import QuickContacts from '../components/QuickContacts.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import SiteHeader from '../components/SiteHeader.astro';
 import { channels } from '../data/channels';
-import { links, coreSkills, skills, experience, education, languages, contacts } from '../data/profile';
+import { links, coreSkills, skills, experience, education, languages, contacts, cvs } from '../data/profile';
 ---
 
 <Base title="Dmytro Ilchenko — Software Engineer">
@@ -39,13 +39,16 @@ import { links, coreSkills, skills, experience, education, languages, contacts }
 
     <section class="section" id="about" aria-labelledby="about-title">
       <h2 id="about-title" class="label">About</h2>
-      <!-- the years are part of the story, not a row of big numbers -->
-      <p class="lead">
-        <span class="hi">Hi, I'm Dmytro and I build and create things.</span> I'm a software engineer specializing
-        in game and web development with over 12 years of commercial <a href="#experience">experience</a>.
-        Since 2014, I have worked on diverse <a href={links.projects}>projects</a> across
-        various <a href="#skills">technologies</a>, focusing mostly on Unity/C# for games and Angular/TypeScript for web apps.
-      </p>
+      <!-- the photo beside the text, level with its first line -->
+      <div class="about-text">
+        <img class="photo" src="/img/dmytro.webp" alt="Dmytro Ilchenko" width="320" height="320" loading="lazy" decoding="async" />
+        <p class="lead">
+          <span class="hi">Hi, I'm Dmytro and I build and create things.</span> I'm a software engineer specializing
+          in game and web development with <span class="hi">over 12 years</span> of commercial <a href="#experience">experience</a>.
+          Since 2014, I have worked on diverse <a href={links.projects}>projects</a> across
+          various <a href="#skills">technologies</a>, focusing mostly on Unity/C# for games and Angular/TypeScript for web apps.
+        </p>
+      </div>
     </section>
 
     <section class="section" id="skills" aria-labelledby="skills-title">
@@ -118,21 +121,43 @@ import { links, coreSkills, skills, experience, education, languages, contacts }
       </div>
     </section>
 
-    <section class="section last-section" id="contact" aria-labelledby="contact-title">
+    <section class="section" id="contact" aria-labelledby="contact-title">
       <h2 id="contact-title" class="label">Contact</h2>
-      <dl class="contacts">
-        {contacts.map((c) => (
-          <div>
-            <dt>{c.label}</dt>
-            <dd>
-              <a href={c.href} {...(c.href.startsWith('http') ? { target: '_blank', rel: 'noopener' } : {})}>{c.text}</a>
-              {c.href.startsWith('mailto:') && (
-                <button type="button" class="copy" data-copy={c.text} aria-label={`Copy ${c.text}`}>copy</button>
-              )}
-            </dd>
-          </div>
+      <div>
+        <dl class="contacts">
+          {contacts.map((c) => (
+            <div>
+              <dt>{c.label}</dt>
+              <dd>
+                <a href={c.href} {...(c.href.startsWith('http') ? { target: '_blank', rel: 'noopener' } : {})}>{c.text}</a>
+                {c.href.startsWith('mailto:') && (
+                  <button type="button" class="copy" data-copy={c.text} aria-label={`Copy ${c.text}`}>copy</button>
+                )}
+              </dd>
+            </div>
+          ))}
+        </dl>
+        <a class="book" href={links.call} target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2" /><path d="M3.5 9.5h17M8 3v4M16 3v4" /></svg>
+          Book a call
+          <span class="book-note">30 min · Calendly ↗</span>
+        </a>
+      </div>
+    </section>
+
+    <section class="section last-section" id="cv" aria-labelledby="cv-title">
+      <h2 id="cv-title" class="label">CV</h2>
+      <ul class="cvs">
+        {cvs.map((cv) => (
+          <li>
+            <a href={cv.href} target="_blank" rel="noopener">
+              <span class="cv-role">{cv.role}</span>
+              <span class="cv-note">{cv.note}</span>
+              <span class="cv-file mono">PDF ↗</span>
+            </a>
+          </li>
         ))}
-      </dl>
+      </ul>
     </section>
   </main>
 
@@ -251,6 +276,8 @@ import { links, coreSkills, skills, experience, education, languages, contacts }
   /* about */
   /* the greeting stands out, the rest of the text is quieter */
   #about { padding: 88px 0; }
+  .about-text { display: flex; align-items: flex-start; gap: 32px; }
+  .photo { flex: none; display: block; width: 120px; height: 120px; margin-top: 6px; border-radius: 50%; object-fit: cover; outline: 1px solid var(--line); outline-offset: 4px; }
   .lead {
     max-width: 760px;
     margin: 0;
@@ -296,6 +323,34 @@ import { links, coreSkills, skills, experience, education, languages, contacts }
   .languages dd { margin: 0; font-size: 15px; color: var(--muted); }
 
   /* contact */
+  /* CVs: two cards side by side */
+  .cvs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; max-width: 900px; margin: 0; padding: 0; list-style: none; }
+  .cvs a { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 16px; padding: 20px 22px; border: 1px solid var(--line); border-radius: 12px; text-decoration: none; transition: border-color 0.2s; }
+  .cvs a:hover { border-color: var(--accent); }
+  .cv-role { font-size: clamp(19px, 2vw, 24px); letter-spacing: -0.01em; transition: color 0.2s; }
+  .cvs a:hover .cv-role { color: var(--accent); }
+  .cv-note { grid-column: 1; font-size: 14px; color: var(--muted); }
+  .cv-file { grid-column: 2; grid-row: 1 / 3; align-self: center; font-size: 12px; letter-spacing: 0.06em; color: var(--muted); }
+
+  /* Book a call: quiet like the theme switch, the calendar icon carries the accent */
+  .book {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    /* lines up with the links above: past the labels' column and its gap */
+    margin: 32px 0 0 calc(140px + 24px);
+    padding: 11px 19px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    font-size: 16px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .book:hover { border-color: var(--accent); color: var(--accent); }
+  .book svg { width: 18px; height: 18px; fill: none; stroke: var(--accent); stroke-width: 1.8; stroke-linecap: round; }
+  .book-note { font-size: 13px; font-weight: 400; color: var(--muted); }
+
   .contacts { display: grid; gap: 14px; margin: 0; }
   .contacts div { display: grid; grid-template-columns: 140px minmax(0, 1fr); align-items: baseline; gap: 24px; }
   .contacts dt { font-size: 15px; color: var(--muted); }
@@ -328,6 +383,9 @@ import { links, coreSkills, skills, experience, education, languages, contacts }
       --tv-caption-bottom: 12px;
     }
     .section, #about { grid-template-columns: minmax(0, 1fr); gap: 20px; padding: 40px 0; }
+    /* narrow: the text flows around the photo instead of squeezing into a column beside it */
+    .about-text { display: block; }
+    .photo { float: left; width: 76px; height: 76px; margin: 6px 18px 6px 0; shape-outside: circle(50%); shape-margin: 12px; }
     .last-section { padding-bottom: 64px; }
   }
   @media (max-width: 640px) {
@@ -335,6 +393,8 @@ import { links, coreSkills, skills, experience, education, languages, contacts }
   }
   @media (max-width: 480px) {
     .timeline > li, .contacts div, .sheet dl div { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+    .book { margin-left: 0; }
+    .cvs { grid-template-columns: minmax(0, 1fr); }
     .sheet dt { font-size: 13px; }
   }
 </style>
