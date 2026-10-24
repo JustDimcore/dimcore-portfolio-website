@@ -9,12 +9,11 @@
 </button>
 
 <script>
-  // Flips whatever is showing now (saved choice or the system setting) and remembers it.
+  // Flips whatever is showing now (the saved choice, dark by default) and remembers it.
   for (const button of document.querySelectorAll<HTMLButtonElement>('[data-theme-toggle]')) {
     button.addEventListener('click', () => {
       const root = document.documentElement;
-      const now = root.dataset.theme ?? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
-      const next = now === 'dark' ? 'light' : 'dark';
+      const next = root.dataset.theme === 'light' ? 'dark' : 'light';
       root.dataset.theme = next;
       try { localStorage.setItem('theme', next); } catch { /* private mode: just for this page */ }
     });
@@ -40,8 +39,4 @@
   .moon { display: none; }
   :global(:root[data-theme="light"]) .sun { display: none; }
   :global(:root[data-theme="light"]) .moon { display: block; }
-  @media (prefers-color-scheme: light) {
-    :global(:root:not([data-theme="dark"])) .sun { display: none; }
-    :global(:root:not([data-theme="dark"])) .moon { display: block; }
-  }
 </style>

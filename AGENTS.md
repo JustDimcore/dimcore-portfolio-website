@@ -30,8 +30,9 @@ Say what you checked and what you couldn't (sound, touch, real phones).
 ## Rules that are easy to break
 
 - **Colours only through the tokens** in `global.css` (`--bg`, `--fg`, `--muted`, `--faint`,
-  `--line`, `--accent`). Both themes must work: the dark one by default, the light one under
-  `[data-theme="light"]` and under `prefers-color-scheme: light`. A new colour needs a value in both.
+  `--line`, `--accent`, `--ok` for the "open to work" light). Both themes must work: the dark one by default (whatever the system
+  setting), the light one under `[data-theme="light"]` once the visitor switches. A new colour
+  needs a value in both.
 - **The bar's height is `--bar-height`.** Anything pinned under the bar uses it; don't hard-code 60px.
 - **The bar is one component** (`SiteHeader`) on both pages and must sit in the same place on both
   (verify checks it).
@@ -74,7 +75,7 @@ checks change with it.
 **Change a text** on the home page: `src/data/profile.ts`, or the About paragraph in
 `src/pages/index.astro`. Keep `#links` pointing at sections that exist (verify checks).
 
-**Change a colour**: the token in `global.css`, in all three blocks that define it: `:root` (dark), `[data-theme="light"]` and the `prefers-color-scheme: light` one.
+**Change a colour**: the token in `global.css`, in both blocks that define it: `:root` (dark) and `[data-theme="light"]`.
 
 **Update a CV** (`public/cv/*.pdf`): edit the HTML in `CVs/`, then print it to PDF with Chrome
 (A4, backgrounds on) under the same file name.
