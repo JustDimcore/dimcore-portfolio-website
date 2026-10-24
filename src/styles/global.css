@@ -1,5 +1,5 @@
 /* Dark: plum walls, coral light. Light: cool grey paper, red-orange ink.
-   The system setting picks one unless the visitor chose (data-theme on <html>, see index.astro). */
+   Dark always, until the visitor switches (data-theme on <html>, see ThemeToggle and Base.astro). */
 :root {
   --bg: #151014;
   --fg: #f1e7eb;
@@ -7,6 +7,7 @@
   --faint: #4e3f48;
   --line: #2a2027;
   --accent: #ff806e;
+  --ok: #4cc38a;                 /* "open to work": a status light, not the accent */
   --tv-glow-idle: 255 128 110;   /* glow behind the TV before there's a picture (screen-glow.ts) */
   color-scheme: dark;
 
@@ -24,21 +25,9 @@
   --faint: #b2b8be;
   --line: #d5d9dc;
   --accent: #d4470f;
+  --ok: #1f9d63;
   --tv-glow-idle: 212 71 15;
   color-scheme: light;
-}
-
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) {
-    --bg: #eceeef;
-    --fg: #15181b;
-    --muted: #636a71;
-    --faint: #b2b8be;
-    --line: #d5d9dc;
-    --accent: #d4470f;
-    --tv-glow-idle: 212 71 15;
-    color-scheme: light;
-  }
 }
 
 *, *::before, *::after { box-sizing: border-box; }

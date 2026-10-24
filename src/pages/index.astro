@@ -5,7 +5,7 @@ import QuickContacts from '../components/QuickContacts.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import SiteHeader from '../components/SiteHeader.astro';
 import { channels } from '../data/channels';
-import { links, coreSkills, skills, experience, education, languages, contacts, cvs } from '../data/profile';
+import { links, coreSkills, skills, experience, education, languages, contacts, cvs, availability } from '../data/profile';
 ---
 
 <Base title="Dmytro Ilchenko — Software Engineer">
@@ -22,6 +22,12 @@ import { links, coreSkills, skills, experience, education, languages, contacts, 
           Software Engineer
           <small>Gamedev &amp; Web</small>
         </p>
+        {availability && (
+          <p class="available">
+            <span class="status"><i aria-hidden="true"></i>{availability.status}</span>
+            <span class="details">{availability.details.map((d) => `· ${d}`).join(' ')}</span>
+          </p>
+        )}
         <!-- top right, level with the name; under the role on narrow screens -->
         <div class="quick-wrap"><QuickContacts /></div>
         <nav aria-label="Main">
@@ -232,6 +238,12 @@ import { links, coreSkills, skills, experience, education, languages, contacts, 
 
   .role { margin: 22px 0 0; font-size: 19px; line-height: 1.4; }
   .role small { display: block; margin-top: 4px; font-size: 16px; color: var(--muted); }
+  /* looking for work: a green status light, the way chat apps show "online" */
+  .available { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 14px 0 0; font-size: 15px; color: var(--muted); }
+  .details { white-space: nowrap; }   /* wraps as one line, not word by word */
+  .status { display: inline-flex; align-items: center; gap: 10px; font-weight: 500; color: var(--fg); }
+  .status i { position: relative; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); }
+  .status i::after { content: ""; position: absolute; inset: -4px; border: 2px solid var(--ok); border-radius: 50%; opacity: 0.35; }
 
   /* a numbered channel list, like the menu of an old TV */
   .intro nav { display: flex; flex-direction: column; max-width: 320px; margin-top: 36px; }

@@ -175,6 +175,12 @@ export const contacts = [
   { label: 'GitHub', text: 'github.com/JustDimcore', href: links.github },
 ];
 
+/** Shown under the role while looking for work; remove it (null) once hired. */
+export const availability: { status: string; details: string[] } | null = {
+  status: 'Open to new roles',
+  details: ['Unity or frontend', 'Kraków / remote'],
+};
+
 /** CVs to download (public/cv/, printed to PDF from CVs/<name>.html). */
 export const cvs = [
   { role: 'Unity Developer', note: 'Games · Unity, C#, .NET', href: '/cv/Dmytro_Ilchenko_CV_Unity.pdf' },

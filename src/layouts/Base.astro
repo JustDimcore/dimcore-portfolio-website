@@ -52,7 +52,7 @@ const ogImage = Astro.site ? new URL('/og.png', Astro.site).href : '/og.png';
         setInterval(() => { on = !on; icon.href = on ? '/favicon.svg' : '/favicon-off.svg'; }, 1100);
       }
     </script>
-    <!-- the saved colour theme goes on before the first paint; without one the system setting decides (global.css) -->
+    <!-- the saved colour theme goes on before the first paint; without one the site is dark (global.css) -->
     <script is:inline>
       try { const t = localStorage.getItem('theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch {}
     </script>

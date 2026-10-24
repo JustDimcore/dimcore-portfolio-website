@@ -36,6 +36,8 @@ const browser = await chromium.launch({
 /** Opens a page and waits until the TV shows a picture. Collects errors into `errors`. */
 async function open(path, { viewport = DESKTOP, colorScheme = 'dark' } = {}) {
   const context = await browser.newContext({ viewport, colorScheme });
+  // the site is dark until the visitor switches: the light theme is a saved choice
+  if (colorScheme === 'light') await context.addInitScript(() => localStorage.setItem('theme', 'light'));
   await context.route(/youtu|plarium|play\.google/, (r) => r.fulfill({ body: 'ok' }));   // links stay offline
   const page = await context.newPage();
   const errors = [];
