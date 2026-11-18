@@ -1,1 +1,1 @@
-public/games/**/*.br filter=lfs diff=lfs merge=lfs -text
+public/games/**/*.unityweb filter=lfs diff=lfs merge=lfs -text

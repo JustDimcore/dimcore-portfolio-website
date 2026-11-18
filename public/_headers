@@ -1,15 +1,4 @@
-# Unity WebGL build (Brotli). The files are already compressed: the server only labels them.
+# Unity WebGL build (compressed with Decompression Fallback: the loader unpacks the
+# .unityweb files itself, so the server needs no Content-Encoding for them).
 /games/flame-and-blame/Build/*
   Cache-Control: no-cache
-
-/games/flame-and-blame/Build/*.wasm.br
-  Content-Type: application/wasm
-  Content-Encoding: br
-
-/games/flame-and-blame/Build/*.js.br
-  Content-Type: application/javascript
-  Content-Encoding: br
-
-/games/flame-and-blame/Build/*.data.br
-  Content-Type: application/octet-stream
-  Content-Encoding: br
