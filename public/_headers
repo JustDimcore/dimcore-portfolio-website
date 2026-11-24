@@ -2,3 +2,6 @@
 # .unityweb files itself, so the server needs no Content-Encoding for them).
 /games/flame-and-blame/Build/*
   Cache-Control: no-cache
+
+/games/flame-and-blame-v2/Build/*
+  Cache-Control: no-cache
